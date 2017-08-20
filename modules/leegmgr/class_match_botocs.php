@@ -33,8 +33,8 @@ class Match_BOTOCS extends Match
     
     public function setBOTOCSHash($hash) 
     {
-        #return mysql_query("UPDATE leegmgr_matches SET hash = '".mysql_real_escape_string($hash)."' WHERE mid = $this->match_id");
-        return mysql_query("INSERT INTO leegmgr_matches (mid, hash) VALUES ($this->match_id, '".mysql_real_escape_string($hash)."')");
+        #return $conn->query("UPDATE leegmgr_matches SET hash = '".$conn->quote($hash)."' WHERE mid = $this->match_id");
+        return $conn->query("INSERT INTO leegmgr_matches (mid, hash) VALUES ($this->match_id, '".$conn->quote($hash)."')");
     }
 }
 

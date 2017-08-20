@@ -66,7 +66,7 @@ public static function dispList()
 	    $queryGet = '('.$_subt1.') UNION DISTINCT ('.$_subt2.') ORDER BY tname ASC';
     }
 
-    $result = mysql_query($queryCnt);
+    $result = $conn->query($queryCnt);
     list($cnt) = mysql_fetch_row($result);
     $pages = ($cnt == 0) ? 1 : ceil($cnt/T_HTML_TEAMS_PER_PAGE);
     global $page;
@@ -81,7 +81,7 @@ public static function dispList()
     $queryGet .= ' LIMIT '.(($page-1)*T_HTML_TEAMS_PER_PAGE).', '.(($page)*T_HTML_TEAMS_PER_PAGE);
 
     $teams = array();
-    $result = mysql_query($queryGet);
+    $result = $conn->query($queryGet);
     while ($t = mysql_fetch_object($result)) {
         $img = new ImageSubSys(IMGTYPE_TEAMLOGO, $t->team_id);
         $t->logo = "<img border='0px' height='20' width='20' alt='Team race picture' src='".$img->getPath($t->f_race_id)."'>";

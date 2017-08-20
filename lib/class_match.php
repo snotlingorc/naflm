@@ -90,10 +90,10 @@ class Match
     function __construct($match_id) {
 
         // MySQL stored information
-        $result = mysql_query("SELECT * FROM matches WHERE match_id = $match_id");
-        if (mysql_num_rows($result) == 0)
+        $result = $conn->query("SELECT * FROM matches WHERE match_id = $match_id");
+        if ($result->fetchColumn() == 0)
             return null;
-        $row = mysql_fetch_assoc($result);
+        $row = $result->fetch(PDO::FETCH_ASSOC);
         foreach ($row as $col => $val) {
             $this->$col = ($val) ? $val : 0;
         }
@@ -109,13 +109,13 @@ class Match
         // Relations
         $query = "SELECT t1.name AS 'team1_name', t2.name AS 'team2_name', t1.owned_by_coach_id AS 'coach1_id', t2.owned_by_coach_id AS 'coach2_id',t1.f_cname AS 'coach1_name', t2.f_cname AS 'coach2_name', t1.f_rname AS 'race1_name', t2.f_rname AS 'race2_name' 
                 FROM teams AS t1, teams AS t2 WHERE t1.team_id = $this->team1_id AND t2.team_id = $this->team2_id";
-        $result = mysql_query($query);
-        foreach (mysql_fetch_assoc($result) as $col => $val) {
+        $result = $conn->query($query);
+        foreach ($result->fetch(PDO::FETCH_ASSOC) as $col => $val) {
             $this->$col = $val;
         }
 
         $tvQuery = "SELECT t1.tv as 'team1_tv', t2.tv as 'team2_tv' FROM teams as t1, teams as t2 WHERE t1.team_id = $this->team1_id AND t2.team_id = $this->team2_id";
-        $tvResult = mysql_query($tvQuery);
+        $tvResult = $conn->query($tvQuery);
         foreach(mysql_fetch_assoc($tvResult) as $col => $tv) {
             $this->$col = $tv;
         }
@@ -135,7 +135,7 @@ class Match
 
     public function setLocked($lock) {
         $this->locked = (bool) $lock;
-        return mysql_query("UPDATE matches SET locked = ".(($lock) ? 1 : 0)." WHERE match_id = $this->match_id");
+        return $conn->query("UPDATE matches SET locked = ".(($lock) ? 1 : 0)." WHERE match_id = $this->match_id");
     }
 
     public function delete() {
@@ -151,7 +151,7 @@ class Match
         $q[] = "DELETE FROM match_data_es WHERE f_mid = $this->match_id";
         $status = true;
         foreach ($q as $query) {
-            $status &= mysql_query($query);
+            $status &= $conn->query($query);
         }
         
         // Subtract team treasury.
@@ -189,7 +189,7 @@ class Match
             
         $status = true;
         foreach ($q as $qry) {
-            $status &= mysql_query($qry);
+            $status &= $conn->query($qry);
         }
         
         // Reset team treasuries
@@ -232,7 +232,7 @@ class Match
 
         // Update match entry.
         $query = "UPDATE matches SET ".array_strpack_assoc('%k = %v',$input,',')." WHERE match_id = $this->match_id";
-        if (!mysql_query($query))
+        if (!$conn->query($query))
             return false;
             
         // Update team treasury
@@ -276,7 +276,7 @@ class Match
 
         // Update match entry.
         $query = "UPDATE matches SET ".array_strpack_assoc('%k = %v',$input,',')." WHERE match_id = $this->match_id";
-        if (!mysql_query($query))
+        if (!$conn->query($query))
             return false;
             
         // Update team treasury
@@ -298,8 +298,8 @@ class Match
         $T_PMD_ACH_IR = array_merge($T_PMD_ACH, $T_PMD_IR);
         $fields = array_merge(array_fill_keys($T_PMD_ACH_IR, 0), array_fill_keys($T_PMD_INJ, NONE));
         $query  = "SELECT ".implode(',',array_keys($fields))." FROM match_data WHERE f_match_id = $this->match_id AND f_player_id = $pid";
-        $result = mysql_query($query);
-        return (mysql_num_rows($result) > 0) ? mysql_fetch_assoc($result) : array();
+        $result = $conn->query($query);
+        return ($result->fetchColumn() > 0) ? $result->fetch(PDO::FETCH_ASSOC) : array();
     }
     
     // ALWAYS run this when finished (AFTER!!!) submitting ALL match data.
@@ -309,7 +309,7 @@ class Match
         SQLTriggers::run(T_SQLTRIG_MATCH_UPD, array('mid' => $this->match_id, 'trid' => $this->f_tour_id, 'tid1' => $this->team1_id, 'tid2' => $this->team2_id, 'played' => (int) $this->is_played));
         Module::runTriggers(T_TRIGGER_MATCH_SAVE, array($this->match_id));
         foreach (Star::getStars(false,false, STATS_MATCH, $this->match_id) as $s) {
-            mysql_query("SELECT syncMVplayer($s->star_id, $this->f_tour_id)");
+            $conn->query("SELECT syncMVplayer($s->star_id, $this->f_tour_id)");
         }
         return true;
     }
@@ -328,7 +328,7 @@ class Match
     
     public function chRound($round) {
         $this->round = $round;
-        return mysql_query("UPDATE matches SET round = $round WHERE match_id = $this->match_id");
+        return $conn->query("UPDATE matches SET round = $round WHERE match_id = $this->match_id");
     }
     
     /***************
@@ -349,7 +349,7 @@ class Match
     }
 
     public static function ImportEntry($pid, array $input) {
-        $status = (bool) mysql_query("REPLACE INTO matches (match_id, team1_id,  team2_id, round, f_tour_id, date_created, date_played)
+        $status = (bool) $conn->query("REPLACE INTO matches (match_id, team1_id,  team2_id, round, f_tour_id, date_created, date_played)
             VALUES (".T_IMPORT_MID.", 0, 0, 0, 0, 0, 0)");
         return $status && self::_entry(null, $pid, $input, array(), true);
     }
@@ -373,12 +373,12 @@ class Match
         } 
         else {
             // Statuses
-            $result = mysql_query("SELECT locked, IF(date_played IS NULL OR date_played = '', FALSE, TRUE) AS 'played' FROM matches WHERE match_id = $mid");
+            $result = $conn->query("SELECT locked, IF(date_played IS NULL OR date_played = '', FALSE, TRUE) AS 'played' FROM matches WHERE match_id = $mid");
             list($LOCKED, $PLAYED) = mysql_fetch_array($result);
             // Node IDs
             $query = "SELECT tour_id AS 'f_tour_id', did AS 'f_did', f_lid AS 'f_lid' FROM matches,tours,divisions WHERE matches.f_tour_id = tours.tour_id AND tours.f_did = divisions.did AND matches.match_id = $mid";
-            $result = mysql_query($query);
-            $input = array_merge($input, mysql_fetch_assoc($result));
+            $result = $conn->query($query);
+            $input = array_merge($input, $result->fetch(PDO::FETCH_ASSOC));
         }
 
         /* 
@@ -389,14 +389,14 @@ class Match
         {
             case ($pid > 0): # Ordinary player?
                 $query = "SELECT owned_by_team_id AS 'f_team_id', f_cid AS 'f_coach_id', f_rid AS 'f_race_id' FROM players WHERE player_id = $pid";
-                $result = mysql_query($query);            
-                $rels = mysql_fetch_assoc($result);
+                $result = $conn->query($query);
+                $rels = $result->fetch(PDO::FETCH_ASSOC);
                 break;
                 
             case ($pid <= ID_STARS_BEGIN || $pid == ID_MERCS): # Star player or Mercenary?
                 $query = "SELECT owned_by_coach_id AS 'f_coach_id', f_race_id AS 'f_race_id' FROM teams WHERE team_id = $input[f_team_id]";
-                $result = mysql_query($query);            
-                $rels = mysql_fetch_assoc($result);
+                $result = $conn->query($query);
+                $rels = $result->fetch(PDO::FETCH_ASSOC);
                 
                 /* Special $input field processing. */
                 switch ($pid) 
@@ -456,12 +456,12 @@ class Match
             if ($input['inj'] == DEAD) {
                 $query = "DELETE FROM match_data USING match_data INNER JOIN matches 
                     WHERE match_data.f_match_id = matches.match_id AND f_player_id = $pid AND date_played > (SELECT date_played FROM matches WHERE match_id = $mid)";
-                $status &= mysql_query($query);
+                $status &= $conn->query($query);
 
             }
             elseif ($input['inj'] != NONE) { # Player has MNG status.
                 global $T_PMD_ACH, $T_PMD_IR, $T_PMD_INJ;
-                $status &= mysql_query("UPDATE match_data SET ".
+                $status &= $conn->query("UPDATE match_data SET ".
                     array_strpack('%s = 0', array_merge($T_PMD_ACH, $T_PMD_IR), ',').','.
                     array_strpack('%s = '.NONE, $T_PMD_INJ, ',')."
                     mg = TRUE                
@@ -486,10 +486,10 @@ class Match
          */
         // Delete entry if already exists (we don't use MySQL UPDATE on rows for simplicity)
         if (!$IMPORT && $pid != ID_MERCS) {
-            $status &= mysql_query("DELETE FROM match_data WHERE f_player_id = $pid AND f_match_id = $mid");
+            $status &= $conn->query("DELETE FROM match_data WHERE f_player_id = $pid AND f_match_id = $mid");
         }
         $query = 'INSERT INTO match_data ('.implode(',', $EXPECTED).') VALUES ('.implode(',', array_values($input)).')';
-        $result = mysql_query($query) or status(false, 'Failed to save player entry with PID = '.$pid.'<br><br>'.mysql_error().'<br><br>'.$query);
+        $result = $conn->query($query) or status(false, 'Failed to save player entry with PID = '.$pid.'<br><br>'.mysql_error().'<br><br>'.$query);
         return $result && 
             // Extra stats, if sent.
             (!empty($ES) ? self::ESentry(array(
@@ -519,13 +519,13 @@ class Match
         // Delete entry if already exists (we don't use MySQL UPDATE on rows for simplicity)
         $WHERE = "f_mid = $relations[f_mid] AND f_pid = $relations[f_pid]";
         $query = "SELECT f_mid FROM $tbl WHERE $WHERE";
-        if (($result = mysql_query($query)) && mysql_num_rows($result) > 0) {
-            mysql_query("DELETE FROM $tbl WHERE $WHERE");
+        if (($result = $conn->query($query)) && $result->fetchColumn() > 0) {
+            $conn->query("DELETE FROM $tbl WHERE $WHERE");
         }
         
         // Insert entry.
         $query  = 'INSERT INTO '.$tbl.' ('.implode(',', $KEYS).') VALUES ('.implode(',', $INPUT_VALUES).')';
-        return mysql_query($query);
+        return $conn->query($query);
     }
 
     public static function player_validation($p, $m) {
@@ -591,10 +591,10 @@ class Match
             WHERE date_played IS ".(($getUpcomming) ? '' : 'NOT')." NULL AND match_id > 0 AND f_tour_id = tour_id AND f_did = did
             ".(($where) ? " AND $where " : '')."
             ORDER BY $ORDERBY_RND date_played DESC $LIMIT";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         
-        if ($result && mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if ($result && $result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($m, new Match($row['match_id']));
             }
         }
@@ -602,8 +602,8 @@ class Match
         # Count number of rows
         $query_cnt = str_replace('SELECT match_id', "SELECT COUNT(*) AS 'cnt'", $query);
         $query_cnt = str_replace($LIMIT, '', $query_cnt);
-        $result = mysql_query($query_cnt);
-        $row = mysql_fetch_assoc($result);
+        $result = $conn->query($query_cnt);
+        $row = $result->fetch(PDO::FETCH_ASSOC);
         $pages = ceil($row['cnt']/$delta);
         
         return array($m, $pages);
@@ -668,7 +668,7 @@ class Match
             
         $query = "INSERT INTO matches (team1_id, team2_id, round, f_tour_id, date_created)
                     VALUES ($input[team1_id], $input[team2_id], $input[round], '$input[f_tour_id]', NOW())";
-        if (mysql_query($query))
+        if ($conn->query($query))
             $mid = mysql_insert_id();
         else {
             self::$T_CREATE_SQL_ERROR['query'] = $query;

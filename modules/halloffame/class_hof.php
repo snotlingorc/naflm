@@ -40,9 +40,9 @@ public $about       = '';
 
 function __construct($hof_id) 
 {
-    $result = mysql_query("SELECT * FROM hof WHERE hof_id = $hof_id");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT * FROM hof WHERE hof_id = $hof_id");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             foreach ($row as $key => $val) {
                 $this->$key = $val;
             }
@@ -52,9 +52,9 @@ function __construct($hof_id)
 
 public function edit($title, $about) 
 {
-    if (mysql_query("UPDATE hof SET 
-                    title = '".mysql_real_escape_string($title)."', 
-                    about = '".mysql_real_escape_string($about)."' 
+    if ($conn->query("UPDATE hof SET
+                    title = '".$conn->quote($title)."',
+                    about = '".$conn->quote($about)."'
                     WHERE hof_id = $this->hof_id")) {
         $this->title = $title;
         $this->about = $about;
@@ -66,7 +66,7 @@ public function edit($title, $about)
 
 public function delete()
 {
-    return (mysql_query("DELETE FROM hof WHERE hof_id = $this->hof_id"));
+    return ($conn->query("DELETE FROM hof WHERE hof_id = $this->hof_id"));
 }
 
 /***************
@@ -119,9 +119,9 @@ public static function getHOF($node, $id, $N = false)
             return array();
     }
 
-    $result = mysql_query($query) or die(mysql_error());
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query($query) or die(mysql_error());
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $entry = new self($row['id']);
             // Add extra fields to object.
             unset($row['id']);
@@ -136,11 +136,11 @@ public static function getHOF($node, $id, $N = false)
 
 public static function create($player_id, $title, $about)
 {
-    return (mysql_query("
+    return ($conn->query("
             INSERT INTO hof 
             (pid, title, about, date) 
             VALUES 
-            ($player_id, '".mysql_real_escape_string($title)."', '".mysql_real_escape_string($about)."', NOW())
+            ($player_id, '".$conn->quote($title)."', '".$conn->quote($about)."', NOW())
             "));
 }
 
@@ -205,7 +205,7 @@ public static function triggerHandler($type, $argv){}
 public static function isInHOF($pid) 
 {
     $query = "SELECT pid FROM hof WHERE pid = $pid";
-    return (($result = mysql_query($query)) && mysql_num_rows($result) > 0);
+    return (($result = $conn->query($query)) && $result->fetchColumn() > 0);
 }
 
 public static function makeList() {
@@ -289,14 +289,14 @@ public static function makeList() {
                 <b><?php echo $lng->getTrn('player', __CLASS__).'</b>&nbsp;&mdash;&nbsp;'.$lng->getTrn('sort_hint', __CLASS__);?><br>
                 <?php
                 $query = "SELECT DISTINCT player_id, f_tname, name FROM players, mv_players WHERE player_id = f_pid AND f_lid = $node_id ORDER by f_tname ASC, name ASC";
-                $result = mysql_query($query);
-                if ($result && mysql_num_rows($result) == 0) {
+                $result = $conn->query($query);
+                if ($result && $result->fetchColumn() == 0) {
                     $_DISABLED = 'DISABLED';
                 }
                 ?>
                 <select name="player_id" id="players" <?php echo $_DISABLED;?>>
                     <?php
-                    while ($row = mysql_fetch_assoc($result)) {
+                    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                         echo "<option value='$row[player_id]' ".(($player_id == $row['player_id']) ? 'SELECTED' : '').">$row[f_tname]: $row[name] </option>\n";
                     }
                     ?>

@@ -35,29 +35,29 @@ public static function syncGameData()
     $status &= Table::createTable($skillstbl,$core_tables[$skillstbl]);
 
     foreach ($DEA as $race_name => $race_details) {
-        $query = "INSERT INTO $races(race_id, name, cost_rr) VALUES (".$race_details['other']['race_id'].", '".mysql_real_escape_string($race_name)."', ".$race_details['other']['rr_cost'].")";
-        $status &= mysql_query($query);
+        $query = "INSERT INTO $races(race_id, name, cost_rr) VALUES (".$race_details['other']['race_id'].", '".$conn->quote($race_name)."', ".$race_details['other']['rr_cost'].")";
+        $status &= $conn->query($query);
         foreach ($race_details['players'] as $player_name => $PD) { # Player Details
             $query = "INSERT INTO $players(
                     pos_id, f_race_id, pos, cost, qty, ma,st,ag,av, skills,norm,doub
                 ) VALUES (
-                    $PD[pos_id], ".$race_details['other']['race_id'].", '".mysql_real_escape_string($player_name)."', $PD[cost], $PD[qty], $PD[ma],$PD[st],$PD[ag],$PD[av],
+                    $PD[pos_id], ".$race_details['other']['race_id'].", '".$conn->quote($player_name)."', $PD[cost], $PD[qty], $PD[ma],$PD[st],$PD[ag],$PD[av],
                     '".implode(',',$PD['def'])."', '".implode('',$PD['norm'])."', '".implode('',$PD['doub'])."'
                 )";
-            $status &= mysql_query($query);
+            $status &= $conn->query($query);
         }
     }
 
     foreach ($stars as $star_name => $SD) {
         $query = "INSERT INTO $starstbl(star_id, name, cost, races, ma,st,ag,av, skills) VALUES (
-            $SD[id], '".mysql_real_escape_string($star_name)."', $SD[cost], '".implode(',', $SD['races'])."', $SD[ma],$SD[st],$SD[ag],$SD[av], '".implode(',', $SD['def'])."'
+            $SD[id], '".$conn->quote($star_name)."', $SD[cost], '".implode(',', $SD['races'])."', $SD[ma],$SD[st],$SD[ag],$SD[av], '".implode(',', $SD['def'])."'
         )";
-        $status = mysql_query($query);
+        $status = $conn->query($query);
     }
 
     foreach ($skillarray as $grp => $skills) {
         foreach ($skills as $id => $s) {
-            $status &= mysql_query("INSERT INTO $skillstbl(skill_id, name, cat) VALUES ($id, '".mysql_real_escape_string($s)."', '$grp')");
+            $status &= $conn->query("INSERT INTO $skillstbl(skill_id, name, cat) VALUES ($id, '".$conn->quote($s)."', '$grp')");
         }
     }
 
@@ -1263,11 +1263,11 @@ public static function installProcsAndFuncs($install = true)
     foreach ($routines as $r) {
         $matches = array();
         if (preg_match('/^CREATE FUNCTION (\w*)\(/', $r, $matches)) {
-            $status &= mysql_query('DROP FUNCTION IF EXISTS '.$matches[1]);
+            $status &= $conn->query('DROP FUNCTION IF EXISTS '.$matches[1]);
         }
         $matches = array();
         if (preg_match('/^CREATE PROCEDURE (\w*)\(/', $r, $matches)) {
-            $status &= mysql_query('DROP PROCEDURE IF EXISTS '.$matches[1]);
+            $status &= $conn->query('DROP PROCEDURE IF EXISTS '.$matches[1]);
         }
     }
 
@@ -1276,7 +1276,7 @@ public static function installProcsAndFuncs($install = true)
     }
 
     foreach ($routines as $r) {
-        $status &= (mysql_query($r) or die("<br><b><font color='red'>FATAL ERROR</font></b>: One or more OBBLM MySQL functions/procedures could not be created. This error is <b>most likely</b> due to your database user NOT having the \"CREATE ROUTINE\" privilege. Some web hosts are willing to help you work around this problem by running this install/upgrade script for you. If not, you will have to find another web host allowing \"CREATE ROUTINE\".<br><br>\n<b>MySQL error (errno ".mysql_errno()."):</b><br>". mysql_error().'<br><br><b>The function/procedure SQL code that failed was:</b><br>'.$r.'<br><br><b>Need help?</b> Try seeking help at the <a TARGET="_blank" href="http://code.google.com/p/obblm/issues/list">OBBLM developers site</a>'));
+        $status &= ($conn->query($r) or die("<br><b><font color='red'>FATAL ERROR</font></b>: One or more OBBLM MySQL functions/procedures could not be created. This error is <b>most likely</b> due to your database user NOT having the \"CREATE ROUTINE\" privilege. Some web hosts are willing to help you work around this problem by running this install/upgrade script for you. If not, you will have to find another web host allowing \"CREATE ROUTINE\".<br><br>\n<b>MySQL error (errno ".mysql_errno()."):</b><br>". mysql_error().'<br><br><b>The function/procedure SQL code that failed was:</b><br>'.$r.'<br><br><b>Need help?</b> Try seeking help at the <a TARGET="_blank" href="http://code.google.com/p/obblm/issues/list">OBBLM developers site</a>'));
     }
 
     return $status;
@@ -1335,8 +1335,8 @@ public static function installTableIndexes()
 
     $status = true;
     foreach ($indicies as $def) {
-        @mysql_query("DROP INDEX $def[name] ON $def[tbl]");
-        $status &= mysql_query("ALTER TABLE $def[tbl] ADD INDEX $def[name] $def[idx]");
+        @$conn->query("DROP INDEX $def[name] ON $def[tbl]");
+        $status &= $conn->query("ALTER TABLE $def[tbl] ADD INDEX $def[name] $def[idx]");
     }
     return $status;
 }
@@ -1351,7 +1351,7 @@ public static function installMVs() {
 
         // Done in Table::createTable() automatically
         #if ($delIfExists) {
-        #    $status &= mysql_query("DROP TABLE IF EXISTS $name");
+        #    $status &= $conn->query("DROP TABLE IF EXISTS $name");
         #}
         $status &= Table::createTable($name,$core_tables[$name]);
     }
@@ -1373,9 +1373,9 @@ public static function reviseEStables()
     Table::createTableIfNotExists('match_data_es', $MDES);
 
     // Remove non-existing fields.
-    $result = mysql_query("DESCRIBE match_data_es");
+    $result = $conn->query("DESCRIBE match_data_es");
     $existingFields = array();
-    while ($r = mysql_fetch_assoc($result)) {
+    while ($r = $result->fetch(PDO::FETCH_ASSOC)) {
         // Ignore relational fields.
         if (preg_match('/^f\_/', $r['Field'])) {
             continue;
@@ -1383,13 +1383,13 @@ public static function reviseEStables()
         $existingFields[] = $r['Field'];
         if (!in_array($r['Field'], array_keys($ES_fields))) {
             $dropped[] = $r['Field'];
-            $status &= mysql_query("ALTER TABLE match_data_es DROP $r[Field]");
+            $status &= $conn->query("ALTER TABLE match_data_es DROP $r[Field]");
         }
     }
     // Add new fields.
     foreach (array_diff(array_keys($ES_fields), $existingFields) as $newField) {
         $added[] = $newField;
-        $status &= mysql_query("ALTER TABLE match_data_es ADD COLUMN $newField ".$ES_fields[$newField]['type']);
+        $status &= $conn->query("ALTER TABLE match_data_es ADD COLUMN $newField ".$ES_fields[$newField]['type']);
     }
 
     return array($status,$added,$dropped);

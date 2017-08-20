@@ -82,7 +82,7 @@ public static function tourMatches()
 	self::matchActions($IS_LOCAL_ADMIN);
 
     $query = "SELECT COUNT(*) FROM matches WHERE f_tour_id = $trid";
-    $result = mysql_query($query);
+    $result = $conn->query($query);
     list($cnt) = mysql_fetch_row($result);
     $pages = ($cnt == 0) ? 1 : ceil($cnt/self::T_HTML_MATCHES_PER_PAGE);
     global $page;
@@ -102,7 +102,7 @@ public static function tourMatches()
     $query = "SELECT t1.name AS 't1_name', t1.team_id AS 't1_id', t2.name AS 't2_name', t2.team_id AS 't2_id', match_id, date_played, locked, round, team1_score, team2_score, t1.owned_by_coach_id AS 'c1_id', t2.owned_by_coach_id AS 'c2_id',t1.f_cname AS 'c1_name', t2.f_cname AS 'c2_name'
         FROM matches, teams AS t1, teams AS t2 WHERE f_tour_id = $trid AND team1_id = t1.team_id AND team2_id = t2.team_id
         ORDER BY round $ROUND_SORT_DIR, date_played DESC, date_created ASC LIMIT ".(($page-1)*self::T_HTML_MATCHES_PER_PAGE).', '.(($page)*self::T_HTML_MATCHES_PER_PAGE);
-    $result = mysql_query($query);
+    $result = $conn->query($query);
     echo "<table class='tours'>\n";
     while ($m = mysql_fetch_object($result)) {
         if ($m->round != $rnd) {
@@ -896,8 +896,8 @@ public static function report_ES($mid, $DIS)
     // Update entries if requested.
     if (!$DIS && isset($_POST['ES_submitted'])) {
         $query = "SELECT tour_id AS 'trid', did, f_lid AS 'lid' FROM matches, tours, divisions WHERE match_id = $mid AND f_tour_id = tour_id AND f_did = did";
-        $result = mysql_query($query);
-        $NR = mysql_fetch_assoc($result); # Node Relations.
+        $result = $conn->query($query);
+        $NR = $result->fetch(PDO::FETCH_ASSOC); # Node Relations.
         $m = new Match($mid);
         global $p; # Dirty trick to make $p accessible within create_function() below.
         $status = true;
@@ -962,9 +962,9 @@ protected static function report_ES_loadPlayers($mid)
             matches.match_id = $mid AND matches.match_id = match_data.f_match_id AND match_data.f_player_id = players.player_id AND (owned_by_team_id = team1_id OR owned_by_team_id = team2_id)
         ORDER BY f_tid ASC, nr ASC";
 #    echo $query;
-    $result = mysql_query($query);
+    $result = $conn->query($query);
     $players = array();
-    while ($p = mysql_fetch_assoc($result)) {
+    while ($p = $result->fetch(PDO::FETCH_ASSOC)) {
         $players[$p['f_tid']][] = $p;
     }
     return $players;

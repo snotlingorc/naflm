@@ -69,7 +69,7 @@ public static function dispList()
 	    $queryGet = '('.$_subt1.') UNION DISTINCT ('.$_subt2.') ORDER BY cname ASC';
     }    
     
-    $result = mysql_query($queryCnt);
+    $result = $conn->query($queryCnt);
     list($cnt) = mysql_fetch_row($result);
     $pages = ($cnt == 0) ? 1 : ceil($cnt/T_HTML_COACHES_PER_PAGE);
     global $page;
@@ -84,7 +84,7 @@ public static function dispList()
     $queryGet .= ' LIMIT '.(($page-1)*T_HTML_COACHES_PER_PAGE).', '.(($page)*T_HTML_COACHES_PER_PAGE);
     
     $coaches = array();
-    $result = mysql_query($queryGet);
+    $result = $conn->query($queryGet);
     while ($c = mysql_fetch_object($result)) {
         $c->retired = ($c->retired) ? '<b>'.$lng->getTrn('common/yes').'</b>' : $lng->getTrn('common/no');
         $coaches[] = $c;
@@ -464,7 +464,7 @@ private function _stats()
                     echo "<tr><td>".$lng->getTrn('name', 'Prize')."</td><td><small>".Module::run('Prize', array('getPrizesString', T_OBJ_COACH, $this->coach_id))."</small></td></tr>\n";
                 }
                 echo "<tr><td colspan='2'><hr></td></tr>";
-                $result = mysql_query("
+                $result = $conn->query("
                     SELECT 
                         COUNT(*) AS 'teams_total', 
                         IFNULL(SUM(IF(rdy IS TRUE AND retired IS FALSE,1,0)),0) AS 'teams_active', 
@@ -474,7 +474,7 @@ private function _stats()
                         IFNULL(CAST(AVG(ff) AS SIGNED INT),0) AS 'avg_ff',
                         IFNULL(CAST(AVG(tv)/1000 AS SIGNED INT),0) AS 'avg_tv'
                     FROM teams WHERE owned_by_coach_id = $this->coach_id");
-                $row = mysql_fetch_assoc($result);
+                $row = $result->fetch(PDO::FETCH_ASSOC);
                 echo "<tr><td>".$lng->getTrn('profile/coach/teams_total')."</td><td>$row[teams_total]</td></tr>\n";
                 echo "<tr><td>".$lng->getTrn('profile/coach/teams_active')."</td><td>$row[teams_active]</td></tr>\n";
                 echo "<tr><td>".$lng->getTrn('profile/coach/teams_notready')."</td><td>$row[teams_notready]</td></tr>\n";

@@ -155,9 +155,9 @@ function __construct()
 
 /* Gets the IDs of the teams already allocated to this conference */
 function loadTeamIds() {
-    $result = mysql_query("SELECT f_team_id FROM conference_teams WHERE f_conf_id=" . $this->conf_id);
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT f_team_id FROM conference_teams WHERE f_conf_id=" . $this->conf_id);
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($this->teamIds, $row['f_team_id']);
         }
     }
@@ -177,9 +177,9 @@ public static function getConferencesForTour($tour_id)
 {
     $conferences = array();
 
-    $result = mysql_query("SELECT conf_id, f_tour_id, name, type, date_created FROM conferences WHERE f_tour_id=$tour_id ORDER by name");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT conf_id, f_tour_id, name, type, date_created FROM conferences WHERE f_tour_id=$tour_id ORDER by name");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         	$conf = new Conference();
             foreach ($row as $key => $val) {
                 $conf->$key = $val;
@@ -194,7 +194,7 @@ public static function getConferencesForTour($tour_id)
 
 public static function addTeamToConference($conf_id,$team_id)  {
     global $lng;
-    $result = mysql_query("INSERT INTO conference_teams (f_conf_id, f_team_id) VALUES ($conf_id, $team_id)");
+    $result = $conn->query("INSERT INTO conference_teams (f_conf_id, f_team_id) VALUES ($conf_id, $team_id)");
     if ($result) {
 		echo "<div class='boxWide'>";
 		HTMLOUT::helpBox($lng->getTrn('addedTeam', 'Conference'));
@@ -208,7 +208,7 @@ public static function addTeamToConference($conf_id,$team_id)  {
 
 public static function removeTeamFromConference($conf_id,$team_id)  {
     global $lng;
-    $result = mysql_query("DELETE FROM conference_teams WHERE f_conf_id=$conf_id AND f_team_id=$team_id");
+    $result = $conn->query("DELETE FROM conference_teams WHERE f_conf_id=$conf_id AND f_team_id=$team_id");
     if ($result) {
 		echo "<div class='boxWide'>";
 		HTMLOUT::helpBox($lng->getTrn('removedTeam', 'Conference'));
@@ -222,9 +222,9 @@ public static function removeTeamFromConference($conf_id,$team_id)  {
 
 public static function removeConference($conf_id)  {
     global $lng;
-    $result = mysql_query("DELETE FROM conference_teams WHERE f_conf_id=$conf_id");
+    $result = $conn->query("DELETE FROM conference_teams WHERE f_conf_id=$conf_id");
     if ($result) {
-    	$result = mysql_query("DELETE FROM conferences WHERE conf_id=$conf_id");
+    	$result = $conn->query("DELETE FROM conferences WHERE conf_id=$conf_id");
 	}
     if ($result) {
 		echo "<div class='boxWide'>";
@@ -239,7 +239,7 @@ public static function removeConference($conf_id)  {
 
 public static function addConference($tour_id, $conf_name)  {
     global $lng;
-    $result = mysql_query("INSERT INTO conferences (f_tour_id, name, type, date_created) VALUES ($tour_id, '".mysql_real_escape_string($conf_name)."', 1, now())");
+    $result = $conn->query("INSERT INTO conferences (f_tour_id, name, type, date_created) VALUES ($tour_id, '".$conn->quote($conf_name)."', 1, now())");
     if ($result) {
 		echo "<div class='boxWide'>";
 		HTMLOUT::helpBox($lng->getTrn('addedConf', 'Conference'));

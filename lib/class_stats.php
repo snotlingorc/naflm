@@ -175,16 +175,16 @@ public static function getRaw($obj, array $filters, $N, array $sortRule, $setAvg
 #    return;
     
     $ret = array();
-    if (($result = mysql_query($query)) && is_resource($result) && mysql_num_rows($result) > 0) {
-        while ($r = mysql_fetch_assoc($result)) {
+    if (($result = $conn->query($query)) && is_resource($result) && $result->fetchColumn() > 0) {
+        while ($r = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($ret, $r);
         }
     }
     
     if (!empty($N)) {
         $query_cnt = str_replace($LIMIT, '', $query);
-        $result = mysql_query($query_cnt); 
-        $pages = ceil(mysql_num_rows($result)/$delta);
+        $result = $conn->query($query_cnt);
+        $pages = ceil($result->fetchColumn()/$delta);
     }
     else {
         $pages = 1;
@@ -236,9 +236,9 @@ public static function getMatches($obj, $obj_id, $node, $node_id, $opp_obj, $opp
             AND match_id > 0 
             AND ".implode(' AND ', $where)." 
         ORDER BY $ORDERBY_RND date_played DESC $LIMIT";
-    $result = mysql_query($query);
-    if (is_resource($result) && mysql_num_rows($result) > 0) {
-        while ($r = mysql_fetch_assoc($result)) {
+    $result = $conn->query($query);
+    if (is_resource($result) && $result->fetchColumn() > 0) {
+        while ($r = $result->fetch(PDO::FETCH_ASSOC)) {
             if ($mkObjs) {
                 $m = new Match($r['match_id']);
                 $m->result = $r['result'];
@@ -253,8 +253,8 @@ public static function getMatches($obj, $obj_id, $node, $node_id, $opp_obj, $opp
     # Count number of rows
     $query_cnt = preg_replace('/^(.*)FROM/sU', "SELECT COUNT(DISTINCT(match_id)) AS 'cnt' FROM", $query);
     $query_cnt = str_replace($LIMIT, '', $query_cnt);
-    $result = mysql_query($query_cnt);
-    $row = mysql_fetch_assoc($result);
+    $result = $conn->query($query_cnt);
+    $row = $result->fetch(PDO::FETCH_ASSOC);
     $pages = (!isset($delta) || !$delta) ? 1 : ceil($row['cnt']/$delta);
 
     return array($matches, $pages);

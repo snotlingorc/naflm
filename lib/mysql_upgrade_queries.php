@@ -147,7 +147,7 @@ function upgrade_075_080_pskills_migrate()
         return true;
     }
     $status = true;
-    $status &= (mysql_query("
+    $status &= ($conn->query("
         CREATE TABLE IF NOT EXISTS players_skills (
             f_pid      MEDIUMINT SIGNED NOT NULL,
             f_skill_id SMALLINT UNSIGNED NOT NULL,
@@ -164,7 +164,7 @@ function upgrade_075_080_pskills_migrate()
             $values = empty($p->$grp) ? array() : array_map(create_function('$s', 'global $skillididx_rvs; return "('.$p->player_id.',\''.$t.'\',".$skillididx_rvs[$s].")";'), explode(',', $p->$grp));
 
             if (!empty($values)) {
-                $status &= (mysql_query("INSERT INTO players_skills(f_pid, type, f_skill_id) VALUES ".implode(',', $values)) or die(mysql_error()));
+                $status &= ($conn->query("INSERT INTO players_skills(f_pid, type, f_skill_id) VALUES ".implode(',', $values)) or die(mysql_error()));
             }
         }
     }
@@ -174,7 +174,7 @@ function upgrade_075_080_pskills_migrate()
         SQLUpgrade::runIfColumnExists('players', 'extra_skills', 'ALTER TABLE players DROP extra_skills'),
     );
     foreach ($sqls_drop as $query) {
-        $status &= (mysql_query($query) or die(mysql_error()));
+        $status &= ($conn->query($query) or die(mysql_error()));
     }
 
     return $status;

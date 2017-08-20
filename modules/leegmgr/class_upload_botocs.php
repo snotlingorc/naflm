@@ -183,7 +183,7 @@ tcas1 = IF(
 WHERE match_id = $this->match_id";
 
 
-        if ( !mysql_query( $query ) )
+        if ( !$conn->query( $query ) )
         {
             $this->error = "Failed to report the TCAS.  Error: ".mysql_error();
             return false;
@@ -196,7 +196,7 @@ WHERE match_id = $this->match_id";
         //Begin add replay
         $query = "UPDATE leegmgr_matches SET replay = \"$this->replay\" WHERE mid = $this->match_id";
 
-        if ( !mysql_query( $query ) )
+        if ( !$conn->query( $query ) )
         {
             $this->error = "Failed to upload the replay file with the following error: ".mysql_error();
             return false;
@@ -541,9 +541,9 @@ WHERE match_id = $this->match_id";
 
     function checkCoach ( $team ) {
 
-        $query = sprintf("SELECT owned_by_coach_id FROM teams WHERE owned_by_coach_id = '%s' and name = '%s' ", mysql_real_escape_string($this->coach_id), mysql_real_escape_string($team) );
+        $query = sprintf("SELECT owned_by_coach_id FROM teams WHERE owned_by_coach_id = '%s' and name = '%s' ", $conn->quote($this->coach_id), $conn->quote($team) );
 
-        if ( !mysql_fetch_array( mysql_query( $query ) ) )
+        if ( !mysql_fetch_array( $conn->query( $query ) ) )
         {
             return false;
         }
@@ -554,8 +554,8 @@ WHERE match_id = $this->match_id";
 
     function checkHash () {
 
-        $query = sprintf("SELECT hash FROM leegmgr_matches WHERE hash = '%s' ", mysql_real_escape_string($this->hash) );
-        $hashresults = mysql_query($query);
+        $query = sprintf("SELECT hash FROM leegmgr_matches WHERE hash = '%s' ", $conn->quote($this->hash) );
+        $hashresults = $conn->query($query);
         $hashresults = mysql_fetch_array($hashresults);
         $hashresults = $hashresults['hash'];
 
@@ -570,8 +570,8 @@ WHERE match_id = $this->match_id";
 
     function checkTeam ( $teamname ) {
 
-        $query = sprintf("SELECT team_id FROM teams WHERE name = '%s' ", mysql_real_escape_string($teamname) );
-        $team_id = mysql_query($query);
+        $query = sprintf("SELECT team_id FROM teams WHERE name = '%s' ", $conn->quote($teamname) );
+        $team_id = $conn->query($query);
 
         if (!$team_id) return false;
 
@@ -589,7 +589,7 @@ WHERE match_id = $this->match_id";
 
         $query = "SELECT match_id FROM matches WHERE submitter_id IS NULL AND ( team1_id = $team_id1 ) AND  ( team2_id = $team_id2 ) ORDER BY match_id ASC";
 
-        $match_id = mysql_query($query);
+        $match_id = $conn->query($query);
         $match_id = mysql_fetch_array($match_id);
         $match_id = $match_id['match_id'];
 
@@ -604,7 +604,7 @@ WHERE match_id = $this->match_id";
 
         $query = "SELECT match_id FROM matches WHERE submitter_id IS NULL AND ( team1_id = $team_id1 ) AND  ( team2_id = $team_id2 ) ORDER BY match_id ASC";
 
-        $match_id = mysql_query($query);
+        $match_id = $conn->query($query);
         $match_id = mysql_fetch_array($match_id);
         $match_id = $match_id['match_id'];
 
@@ -619,7 +619,7 @@ WHERE match_id = $this->match_id";
 
         $query = "SELECT match_id FROM matches WHERE submitter_id IS NULL AND ( ( team1_id = $team_id1 ) OR  ( team1_id = $team_id2 ) OR  ( team2_id = $team_id1 ) OR ( team2_id = $team_id2 ) )";
 
-        $match_id = mysql_query($query);
+        $match_id = $conn->query($query);
         $match_id = mysql_fetch_array($match_id);
         $match_id = $match_id['match_id'];
 
@@ -829,7 +829,7 @@ WHERE match_id = $this->match_id";
         $did = get_alt_col('teams', 'team_id', $this->hometeam_id, 'f_did');
         $query = "SELECT tour_id FROM tours WHERE (f_did = $did) AND (type = 1) AND (locked != 1) ORDER BY tour_id DESC";
 
-        $tour_id = mysql_query($query);
+        $tour_id = $conn->query($query);
         $tour_id = mysql_fetch_array($tour_id);
         $tour_id = $tour_id['tour_id'];
 
@@ -933,7 +933,7 @@ WHERE match_id = $this->match_id";
                 return false;
             }
             $uploadfile = $uploaddir . basename($this->userfile['name']);
-            $this->replay = mysql_real_escape_string(fread(fopen($this->userfile['tmp_name'], "r"), filesize($this->userfile['tmp_name'])));
+            $this->replay = $conn->quote(fread(fopen($this->userfile['tmp_name'], "r"), filesize($this->userfile['tmp_name'])));
 
             if (strlen($this->userfile['tmp_name'])>3) $zip = zip_open($this->userfile['tmp_name']);
 
@@ -993,7 +993,7 @@ WHERE match_id = $this->match_id";
             $mid = $_GET['replay'];
             if ( is_numeric($mid) )
             {
-                $zip = mysql_query( "SELECT replay FROM `leegmgr_matches` WHERE mid = $mid" );
+                $zip = $conn->query( "SELECT replay FROM `leegmgr_matches` WHERE mid = $mid" );
                 $zip = mysql_fetch_array($zip);
                 $zip = $zip[0];
             }
@@ -1108,7 +1108,7 @@ WHERE match_id = $this->match_id";
     {
         switch ($type) {
             case ( $type == T_TRIGGER_MATCH_DELETE || $type == T_TRIGGER_MATCH_RESET ):
-                $result = mysql_query( 'DELETE FROM leegmgr_matches WHERE mid = '.$argv[0].' LIMIT 1' );
+                $result = $conn->query( 'DELETE FROM leegmgr_matches WHERE mid = '.$argv[0].' LIMIT 1' );
                 break;
         }
     }

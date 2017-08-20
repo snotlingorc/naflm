@@ -128,11 +128,11 @@ class Player
         global $DEA;
 
         // Get relaveant store game data.
-        $result = mysql_query("SELECT player_id,
+        $result = $conn->query("SELECT player_id,
             game_data_players.qty AS 'qty', game_data_players.pos AS 'pos', game_data_players.skills AS 'def_skills', 
             game_data_players.ma AS 'def_ma', game_data_players.st AS 'def_st', game_data_players.ag AS 'def_ag', game_data_players.av AS 'def_av'
             FROM players, game_data_players WHERE player_id = $player_id AND f_pos_id = pos_id");
-        foreach (mysql_fetch_assoc($result) as $col => $val) {
+        foreach ($result->fetch(PDO::FETCH_ASSOC) as $col => $val) {
             $this->$col = ($val) ? $val : 0;
         }
         $this->position = $this->pos;
@@ -184,7 +184,7 @@ class Player
     public function setSkills() {
         global $skillcats;
         foreach ($skillcats as $t => $grp) {
-            $result = mysql_query("SELECT GROUP_CONCAT(f_skill_id) FROM players_skills WHERE f_pid = $this->player_id AND type = '$t'");
+            $result = $conn->query("SELECT GROUP_CONCAT(f_skill_id) FROM players_skills WHERE f_pid = $this->player_id AND type = '$t'");
             $row = mysql_fetch_row($result);
             $this->{$grp['obj_idx']} = empty($row[0]) ? array() : explode(',', $row[0]);
         }
@@ -223,9 +223,9 @@ class Player
             ir2_d1 AS 'D21', ir2_d2 AS 'D22',
             ir3_d1 AS 'D31', ir3_d2 AS 'D32'
         FROM match_data, matches WHERE f_match_id = match_id AND f_player_id = $this->player_id AND (ir1_d1 != 0 OR ir1_d2 != 0 OR ir2_d1 != 0 OR ir2_d2 != 0 OR ir3_d1 != 0 OR ir3_d2 != 0) ORDER BY date_played DESC LIMIT $N_allowed_new_skills";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         $IRs = array();
-        while ($D6s = mysql_fetch_assoc($result)) {
+        while ($D6s = $result->fetch(PDO::FETCH_ASSOC)) {
             foreach (range(1,3) as $i) {
                 if ($D6s["D${i}1"]+$D6s["D${i}2"] > 0) {
                     $IRs[] = array($D6s["D${i}1"], $D6s["D${i}2"]);
@@ -303,7 +303,7 @@ class Player
         // Is able to be un-bought, does not mean that player is not buyable!
         // If the player has NOT participated in any matches then player is un-buyable.
         $query = "SELECT COUNT(*) AS 'cnt' FROM match_data WHERE f_player_id = $this->player_id";
-        return !(($result = mysql_query($query)) && ($row = mysql_fetch_assoc($result)) && $row['cnt'] > 0);
+        return !(($result = $conn->query($query)) && ($row = $result->fetch(PDO::FETCH_ASSOC)) && $row['cnt'] > 0);
     }
 
     public function sell() {
@@ -325,7 +325,7 @@ class Player
         if (!$team->dtreasury($val * $rules['player_refund']))
             return false;
 
-        if (!mysql_query("UPDATE players SET date_sold = NOW() WHERE player_id = $this->player_id"))
+        if (!$conn->query("UPDATE players SET date_sold = NOW() WHERE player_id = $this->player_id"))
             return false;
 
         $this->is_sold = true;
@@ -340,7 +340,7 @@ class Player
          **/
 
         global $rules;
-        $lid = get_alt_col('teams', 'team_id̈́', $this->owned_by_team_id, 'f_lid');
+        $lid = get_alt_col('teams', 'team_id??', $this->owned_by_team_id, 'f_lid');
         setupGlobalVars(T_SETUP_GLOBAL_VARS__LOAD_LEAGUE_SETTINGS, array('lid' => (int) $lid)); // Load correct $rules for league.
 
         if (!$this->is_sold || $this->is_dead)
@@ -352,7 +352,7 @@ class Player
         if (!$team->dtreasury(-1 * $val * $rules['player_refund']))
             return false;
 
-        if (!mysql_query("UPDATE players SET date_sold = NULL WHERE player_id = $this->player_id"))
+        if (!$conn->query("UPDATE players SET date_sold = NULL WHERE player_id = $this->player_id"))
             return false;
 
         $this->is_sold = false;
@@ -375,7 +375,7 @@ class Player
         if (!$team->dtreasury($price))
             return false;
 
-        if (!mysql_query("DELETE FROM players WHERE player_id = $this->player_id"))
+        if (!$conn->query("DELETE FROM players WHERE player_id = $this->player_id"))
             return false;
     
         SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
@@ -399,7 +399,7 @@ class Player
 
         $query = "UPDATE players SET type = ".PLAYER_TYPE_NORMAL." WHERE player_id = $this->player_id";
         
-        if (mysql_query($query)) {
+        if ($conn->query($query)) {
             return true;
         }
         // Return money.
@@ -431,7 +431,7 @@ class Player
 
         $query = "UPDATE players SET type = ".PLAYER_TYPE_JOURNEY." WHERE player_id = $this->player_id";
         
-        if (mysql_query($query)) {
+        if ($conn->query($query)) {
             return true;
         }
         // Pull back money.
@@ -442,22 +442,22 @@ class Player
     }
 
     public function rename($new_name) {
-        return mysql_query("UPDATE players SET name = '" . mysql_real_escape_string($new_name) . "' WHERE player_id = $this->player_id");
+        return $conn->query("UPDATE players SET name = '" . $conn->quote($new_name) . "' WHERE player_id = $this->player_id");
     }
     
     public function renumber($number) {
         global $T_ALLOWED_PLAYER_NR;
-        return (in_array($number, $T_ALLOWED_PLAYER_NR) && mysql_query("UPDATE players SET nr = $number WHERE player_id = $this->player_id"));
+        return (in_array($number, $T_ALLOWED_PLAYER_NR) && $conn->query("UPDATE players SET nr = $number WHERE player_id = $this->player_id"));
     }
 
     public function dspp($delta) {
         $query = "UPDATE players SET extra_spp = IF(extra_spp IS NULL, $delta, extra_spp + ($delta)) WHERE player_id = $this->player_id";
-        return mysql_query($query);
+        return $conn->query($query);
     }
 
     public function dval($val = 0) {
         $query = "UPDATE players SET extra_val = $val WHERE player_id = $this->player_id";
-        return mysql_query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
+        return $conn->query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
     }
 
     public function addSkill($type, $skill) {
@@ -497,7 +497,7 @@ class Player
             $query = "INSERT INTO players_skills(f_pid, f_skill_id, type) VALUES ($this->player_id, $skill, '$type')";
         }
 
-        return mysql_query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
+        return $conn->query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
     }
 
     public function rmSkill($type, $skill) {
@@ -521,7 +521,7 @@ class Player
             }
         }
 
-        return mysql_query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
+        return $conn->query($query) && SQLTriggers::run(T_SQLTRIG_PLAYER_DPROPS, array('id' => $this->player_id, 'obj' => $this)); # Update PV and TV.
     }
     
     public function getStatus($match_id) {
@@ -595,8 +595,8 @@ class Player
                 AND cnt = 1
         ";
 
-        if (($result = mysql_query($query)) && mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if (($result = $conn->query($query)) && $result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($matches, array_merge(array('match_obj' => new Match($row['f_match_id'])), $row));
             }
         }
@@ -613,8 +613,8 @@ class Player
         $mdata = array();
 
         $query = "SELECT mvp, cp, td, intcpt, bh, ki, si, f_match_id FROM match_data, matches WHERE match_id > 0 AND f_match_id = match_id AND f_player_id = $this->player_id AND ($type) > 0 ORDER BY date_played DESC";
-        if (($result = mysql_query($query)) && mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if (($result = $conn->query($query)) && $result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($mdata, array_merge($row, array('match_obj' => new Match($row['f_match_id']))));
             }
         }
@@ -692,8 +692,8 @@ class Player
         $injs = array();
         $stats = array();
         $query = "SELECT inj, agn1, agn2, f_match_id AS 'mid',  mvp, cp, td, intcpt, bh, si, ki FROM match_data, matches WHERE f_match_id = match_id AND f_player_id = $this->player_id AND (inj != ".NONE." OR agn1 != ".NONE." OR agn2 != ".NONE.") ORDER BY date_played DESC";
-        if (($result = mysql_query($query)) && mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if (($result = $conn->query($query)) && $result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 $stats[] = $row;
                 $tmp = array();
                 foreach (array('inj', 'agn1', 'agn2') as $inj) {
@@ -723,7 +723,7 @@ class Player
      
     public static function exists($id) 
     {
-        $result = mysql_query("SELECT COUNT(*) FROM players WHERE player_id = $id");
+        $result = $conn->query("SELECT COUNT(*) FROM players WHERE player_id = $id");
         list($CNT) = mysql_fetch_row($result);
         return ($CNT == 1);
     }
@@ -737,9 +737,9 @@ class Player
         $query = "SELECT getPlayerStatus($player_id,$match_id) AS 'inj'";
 
         // Determine what status is.
-        $result = mysql_query($query);
-        if (is_resource($result) && mysql_num_rows($result) > 0) {
-            $row = mysql_fetch_assoc($result);
+        $result = $conn->query($query);
+        if (is_resource($result) && $result->fetchColumn() > 0) {
+            $row = $result->fetch(PDO::FETCH_ASSOC);
             switch ($row['inj'])
             {
                 case NONE: return NONE;
@@ -758,7 +758,7 @@ class Player
          * Get the price of a specific player.
          **/
         
-        $result = mysql_query("SELECT cost FROM game_data_players WHERE pos_id = $pos_id");
+        $result = $conn->query("SELECT cost FROM game_data_players WHERE pos_id = $pos_id");
         $row = mysql_fetch_row($result);
         return (int) $row[0];
     }
@@ -855,13 +855,13 @@ class Player
         }
 
         $input['owned_by_team_id'] = (int) $input['team_id']; unset($input['team_id']);
-        $input['name'] = "'".mysql_real_escape_string($input['name'])."'"; 
+        $input['name'] = "'".$conn->quote($input['name'])."'";
         $input['date_bought'] = 'NOW()';
         $input['type'] = $JM ? PLAYER_TYPE_JOURNEY : PLAYER_TYPE_NORMAL;
         foreach (array('ach_ma', 'ach_st', 'ach_ag', 'ach_av', 'extra_spp') as $f) {$input[$f] = 0;}
 
         $query = "INSERT INTO players (".implode(',',array_keys($input)).") VALUES (".implode(',', array_values($input)).")";
-        if (mysql_query($query)) {
+        if ($conn->query($query)) {
             $pid = mysql_insert_id();
             $team->dtreasury(-1 * $price);
         }

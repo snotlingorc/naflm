@@ -30,9 +30,9 @@ if (isset($_POST['button'])) {
     $TIE_TEAMS = get_alt_col('leagues', 'lid', $lid, 'tie_teams');
     foreach ($team_ids as $tid) {
         $query = "SELECT (t.f_did = $did) AS 'in_did', (t.f_lid = $lid) AS 'in_lid' FROM teams AS t WHERE t.team_id = $tid";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         if ($result) {
-			$state = mysql_fetch_assoc($result);
+			$state = $result->fetch(PDO::FETCH_ASSOC);
 			if (!$state['in_lid']) {
 				$teams_OK['l'] = false;
 				break;

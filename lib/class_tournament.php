@@ -63,8 +63,8 @@ class Tour
         global $settings;
 
         // MySQL stored information.
-        $result = mysql_query("SELECT * FROM tours WHERE tour_id = $tour_id");
-        $row    = mysql_fetch_assoc($result);
+        $result = $conn->query("SELECT * FROM tours WHERE tour_id = $tour_id");
+        $row    = $result->fetch(PDO::FETCH_ASSOC);
         foreach ($row as $col => $val) {
             $this->$col = ($val) ? $val : 0;
         }
@@ -82,9 +82,9 @@ class Tour
          **/
 
         $matches = array();
-        $result = mysql_query("SELECT match_id FROM matches WHERE f_tour_id = $this->tour_id ORDER BY match_id ASC");
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        $result = $conn->query("SELECT match_id FROM matches WHERE f_tour_id = $this->tour_id ORDER BY match_id ASC");
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($matches, new Match($row['match_id']));
             }
         }
@@ -100,13 +100,13 @@ class Tour
 
         $teams = array();
         $team_ids = array();
-        $result = mysql_query("SELECT DISTINCT(tids) AS 'tid' FROM (
+        $result = $conn->query("SELECT DISTINCT(tids) AS 'tid' FROM (
             SELECT team1_id AS 'tids' FROM matches WHERE f_tour_id = $this->tour_id
                 UNION
             SELECT team2_id AS 'tids' FROM matches WHERE f_tour_id = $this->tour_id
             ) AS tbl ORDER BY tids");
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 $team_ids[] = $row['tid'];
             }
             if ($only_return_ids) {
@@ -145,13 +145,13 @@ class Tour
             $q[] = "DELETE FROM tours      WHERE tour_id = $this->tour_id";
             $status = true;
             foreach ($q as $query) {
-                $status &= mysql_query($query);
+                $status &= $conn->query($query);
             }
             return $status;
         }
         elseif ($this->is_empty) {
             $query = "DELETE FROM tours WHERE tour_id = $this->tour_id";
-            if (mysql_query($query))
+            if ($conn->query($query))
                 return true;
         }
         else {
@@ -162,18 +162,18 @@ class Tour
     public function save() {
         $query = "UPDATE tours SET
             rs = $this->rs,
-            name = '" . mysql_real_escape_string($this->name) . "',
+            name = '" . $conn->quote($this->name) . "',
             type = $this->type,
             locked = ".(($this->locked) ? 1 : 0).",
             allow_sched = $this->allow_sched
         WHERE tour_id = $this->tour_id";
-        return mysql_query($query);
+        return $conn->query($query);
     }
     
     // Run this to sync. all teams' points in this tournament. 
     // Use this after having changed the PTS def. (ranking system).
     public function syncPTS() {
-        return mysql_query("CALL syncTourPTS($this->tour_id)");
+        return $conn->query("CALL syncTourPTS($this->tour_id)");
     }
 
     /***************
@@ -192,9 +192,9 @@ class Tour
          **/
 
         $tours = array();
-        $result = mysql_query("SELECT tour_id FROM tours ORDER BY date_created DESC");
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        $result = $conn->query("SELECT tour_id FROM tours ORDER BY date_created DESC");
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($tours, new Tour($row['tour_id']));
             }
         }
@@ -208,10 +208,10 @@ class Tour
          * Returns the tournament object for the latest tournament.
          **/
 
-        $result = mysql_query("SELECT tour_id FROM tours ORDER BY date_created DESC LIMIT 1");
+        $result = $conn->query("SELECT tour_id FROM tours ORDER BY date_created DESC LIMIT 1");
 
-        if (mysql_num_rows($result) > 0) {
-            $row = mysql_fetch_assoc($result);
+        if ($result->fetchColumn() > 0) {
+            $row = $result->fetch(PDO::FETCH_ASSOC);
             return (new Tour($row['tour_id']));
         }
         else {
@@ -237,8 +237,8 @@ class Tour
         /* Create tournament */
 
         // Quit if can't make tournament entry.
-        $query = "INSERT INTO tours (name, f_did, type, rs, date_created, allow_sched) VALUES ('" . mysql_real_escape_string($input['name']) . "', $input[did], $input[type], $input[rs], NOW(), $input[allow_sched])";
-        if (!mysql_query($query)) {
+        $query = "INSERT INTO tours (name, f_did, type, rs, date_created, allow_sched) VALUES ('" . $conn->quote($input['name']) . "', $input[did], $input[type], $input[rs], NOW(), $input[allow_sched])";
+        if (!$conn->query($query)) {
             return false;
         }
         $tour_id = mysql_insert_id();

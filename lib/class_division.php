@@ -39,8 +39,8 @@ public $league_name = '';
 
 public function __construct($did) 
 {
-    $result = mysql_query("SELECT * FROM divisions WHERE did = $did");
-    $row = mysql_fetch_assoc($result);
+    $result = $conn->query("SELECT * FROM divisions WHERE did = $did");
+    $row = $result->fetch(PDO::FETCH_ASSOC);
     foreach ($row as $col => $val) {
         $this->$col = ($val) ? $val : 0;
     }
@@ -52,21 +52,21 @@ public function __construct($did)
 
 public function delete()
 {
-    return mysql_query("DELETE FROM divisions WHERE did = $this->did");
+    return $conn->query("DELETE FROM divisions WHERE did = $this->did");
 }
 
 public function setName($name)
 {
-    $query = "UPDATE divisions SET name = '".mysql_real_escape_string($name)."' WHERE did = $this->did";
-    return (get_alt_col('divisions', 'name', $name, 'did')) ? false : mysql_query($query);
+    $query = "UPDATE divisions SET name = '".$conn->quote($name)."' WHERE did = $this->did";
+    return (get_alt_col('divisions', 'name', $name, 'did')) ? false : $conn->query($query);
 }
 
 public function getTours($onlyIds = false)
 {
     $tours = array();
-    $result = mysql_query("SELECT tour_id FROM tours WHERE f_did = $this->did");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT tour_id FROM tours WHERE f_did = $this->did");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($tours, ($onlyIds) ? $row['tour_id'] : new Tour($row['tour_id']));
         }
     }
@@ -76,9 +76,9 @@ public function getTours($onlyIds = false)
 public static function getDivisions($onlyIds = false)
 {
     $divisions = array();
-    $result = mysql_query("SELECT did FROM divisions");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT did FROM divisions");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($divisions, ($onlyIds) ? $row['did'] : new Division($row['did']));
         }
     }
@@ -87,8 +87,8 @@ public static function getDivisions($onlyIds = false)
 
 public static function create($f_lid, $name)
 {
-    $query = "INSERT INTO divisions (f_lid, name) VALUES ($f_lid, '".mysql_real_escape_string($name)."')";
-    return (get_alt_col('divisions', 'name', $name, 'did')) ? false : mysql_query($query);
+    $query = "INSERT INTO divisions (f_lid, name) VALUES ($f_lid, '".$conn->quote($name)."')";
+    return (get_alt_col('divisions', 'name', $name, 'did')) ? false : $conn->query($query);
 }
 
 }

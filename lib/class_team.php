@@ -107,14 +107,14 @@ class Team
 // No longer supported ! See http://code.google.com/p/obblm/issues/detail?id=463#c5
 #    public function setOwnership($cid) {
 #        $query = "UPDATE teams SET owned_by_coach_id = $cid WHERE team_id = $this->team_id";
-#        return mysql_query($query) && ($this->owned_by_coach_id = $cid) && SQLTriggers::run(T_SQLTRIG_TEAM_UPDATE_CHILD_RELS, array('id' => $this->team_id, 'obj' => $this));
+#        return $conn->query($query) && ($this->owned_by_coach_id = $cid) && SQLTriggers::run(T_SQLTRIG_TEAM_UPDATE_CHILD_RELS, array('id' => $this->team_id, 'obj' => $this));
 #    }
     
     public function getPlayers() {
         $this->_players = array();
-        $result = mysql_query("SELECT player_id FROM players WHERE owned_by_team_id = $this->team_id ORDER BY nr ASC, name ASC");
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        $result = $conn->query("SELECT player_id FROM players WHERE owned_by_team_id = $this->team_id ORDER BY nr ASC, name ASC");
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($this->_players, new Player($row['player_id']));
             }
         }
@@ -134,9 +134,9 @@ class Team
          **/
 
         $query = "SELECT f_tour_id FROM matches WHERE team1_id = $this->team_id OR team2_id = $this->team_id ORDER BY date_played DESC LIMIT 1";
-        $result = mysql_query($query);
-        if (mysql_num_rows($result) > 0) {
-            $row = mysql_fetch_assoc($result);
+        $result = $conn->query($query);
+        if ($result->fetchColumn() > 0) {
+            $row = $result->fetch(PDO::FETCH_ASSOC);
             return $row['f_tour_id'];
         }
 
@@ -166,11 +166,11 @@ class Team
          **/
 
         if ($this->isDeletable()) {
-            $query = "DELETE FROM match_data WHERE f_team_id = $this->team_id"; mysql_query($query); // These entries occur only when players are imported.
-            $query = "DELETE FROM players WHERE owned_by_team_id = $this->team_id"; mysql_query($query);
-            $query = "DELETE FROM teams WHERE team_id = $this->team_id"; mysql_query($query);
-            $query = "DELETE FROM mv_players WHERE f_tid = $this->team_id"; mysql_query($query);
-            $query = "DELETE FROM mv_teams WHERE f_tid = $this->team_id"; mysql_query($query);
+            $query = "DELETE FROM match_data WHERE f_team_id = $this->team_id"; $conn->query($query); // These entries occur only when players are imported.
+            $query = "DELETE FROM players WHERE owned_by_team_id = $this->team_id"; $conn->query($query);
+            $query = "DELETE FROM teams WHERE team_id = $this->team_id"; $conn->query($query);
+            $query = "DELETE FROM mv_players WHERE f_tid = $this->team_id"; $conn->query($query);
+            $query = "DELETE FROM mv_teams WHERE f_tid = $this->team_id"; $conn->query($query);
             SQLTriggers::run(T_SQLTRIG_COACH_TEAMCNT, array('id' => $this->owned_by_coach_id, 'obj' => new Coach($this->owned_by_coach_id)));
             SQLTriggers::run(T_SQLTRIG_RACE_TEAMCNT, array('id' => $this->f_race_id, 'obj' => new Race($this->f_race_id)));
             return true;
@@ -189,18 +189,18 @@ class Team
         if (empty($new_name))
             return false;
 
-        $query  = "SELECT team_id FROM teams WHERE team_id != $this->team_id AND name = '" . mysql_real_escape_string($new_name) . "'";
-        $result = mysql_query($query);
-        if (mysql_num_rows($result) > 0)
+        $query  = "SELECT team_id FROM teams WHERE team_id != $this->team_id AND name = '" . $conn->quote($new_name) . "'";
+        $result = $conn->query($query);
+        if ($result->fetchColumn() > 0)
             return false;
 
-        $query = "UPDATE teams SET name = '" . mysql_real_escape_string($new_name) . "' WHERE team_id = $this->team_id";
-        return mysql_query($query) && SQLTriggers::run(T_SQLTRIG_TEAM_UPDATE_CHILD_RELS, array('id' => $this->team_id, 'obj' => $this));
+        $query = "UPDATE teams SET name = '" . $conn->quote($new_name) . "' WHERE team_id = $this->team_id";
+        return $conn->query($query) && SQLTriggers::run(T_SQLTRIG_TEAM_UPDATE_CHILD_RELS, array('id' => $this->team_id, 'obj' => $this));
     }
 
     public function setRetired($bool) {
 
-        return mysql_query("UPDATE teams SET retired = ".(($bool) ? 1 : 0)." WHERE team_id = $this->team_id");
+        return $conn->query("UPDATE teams SET retired = ".(($bool) ? 1 : 0)." WHERE team_id = $this->team_id");
     }
 
     public function buy($thing) {
@@ -231,7 +231,7 @@ class Team
 
         // Buy that thing!
         $price = $team_goods[$thing]['cost'];
-        if (mysql_query("UPDATE teams SET treasury = treasury - $price, $thing = $thing + 1 WHERE team_id = $this->team_id")) {
+        if ($conn->query("UPDATE teams SET treasury = treasury - $price, $thing = $thing + 1 WHERE team_id = $this->team_id")) {
             SQLTriggers::run(T_SQLTRIG_TEAM_DPROPS, array('id' => $this->team_id, 'obj' => $this)); # Update TV.
             $this->$thing++;
             $this->treasury -= $price;
@@ -260,7 +260,7 @@ class Team
 
         // Un-buy!
         $price = $team_goods[$thing]['cost'];
-        if (mysql_query("UPDATE teams SET treasury = treasury + $price, $thing = $thing - 1 WHERE team_id = $this->team_id")) {
+        if ($conn->query("UPDATE teams SET treasury = treasury + $price, $thing = $thing - 1 WHERE team_id = $this->team_id")) {
             SQLTriggers::run(T_SQLTRIG_TEAM_DPROPS, array('id' => $this->team_id, 'obj' => $this));
             $this->$thing--;
             $this->treasury += $price;
@@ -309,7 +309,7 @@ class Team
          **/
 
         $query = "UPDATE teams SET treasury = treasury + $delta WHERE team_id = $this->team_id";
-        if (mysql_query($query)) {
+        if ($conn->query($query)) {
             $this->treasury += $delta;
             return true;
         }
@@ -326,7 +326,7 @@ class Team
         $integer = intval(max($integer,0));
 
         $query = "UPDATE teams SET ff_bought = $integer WHERE team_id = $this->team_id";
-        if (mysql_query($query)) {
+        if ($conn->query($query)) {
             $this->ff_bought+= $integer;
             return true;
         }
@@ -337,7 +337,7 @@ class Team
 
     public function setReady($bool) {
 
-        mysql_query("UPDATE teams SET rdy = ".(($bool) ? 1 : 0)." WHERE team_id = $this->team_id");
+        $conn->query("UPDATE teams SET rdy = ".(($bool) ? 1 : 0)." WHERE team_id = $this->team_id");
         $this->rdy = $bool;
         return true;
     }
@@ -349,9 +349,9 @@ class Team
          **/
 
         $query = "SELECT match_id FROM matches WHERE team1_id = $this->team_id OR team2_id = $this->team_id LIMIT 1";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
 
-        return (mysql_num_rows($result) > 0) ? false : true;
+        return ($result->fetchColumn() > 0) ? false : true;
     }
 
     public function isFull() {
@@ -366,7 +366,7 @@ class Team
 
         $query = "SELECT (COUNT(*) >= ".$rules['max_team_players'].") FROM players
             WHERE owned_by_team_id = $this->team_id AND date_sold IS NULL AND status NOT IN (".DEAD.")";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         $row = mysql_fetch_row($result);
         return (bool) $row[0];
     }
@@ -379,7 +379,7 @@ class Team
         
         $query = "SELECT IFNULL(COUNT(*) < qty, TRUE) FROM players, game_data_players 
             WHERE f_pos_id = pos_id AND owned_by_team_id = $this->team_id AND f_pos_id = $pos_id AND date_died IS NULL AND date_sold IS NULL";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         $row = mysql_fetch_row($result);
         return ((bool) $row[0]) && $this->isPlayerPosValid($pos_id);
     }
@@ -416,9 +416,9 @@ class Team
         $query = "SELECT DISTINCT(f_tour_id) FROM matches, tours
                 WHERE f_tour_id = tour_id AND team1_id = $this->team_id OR team2_id = $this->team_id
                 ORDER BY tours.date_created ASC";
-        $result = mysql_query($query);
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        $result = $conn->query($query);
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($tours, ($ids_only) ? $row['f_tour_id'] : new Tour($row['f_tour_id']));
             }
         }
@@ -430,7 +430,7 @@ class Team
     {
         global $T_ALLOWED_PLAYER_NR;
         $query = "SELECT GROUP_CONCAT(nr) FROM players WHERE owned_by_team_id = $this->team_id GROUP BY owned_by_team_id";
-        $result = mysql_query($query);
+        $result = $conn->query($query);
         list($inUse) = mysql_fetch_row($result);
         $inUse = explode(',',$inUse);
         $free = array_diff($T_ALLOWED_PLAYER_NR, $inUse);
@@ -490,7 +490,7 @@ class Team
     
     // Run this after having imported THIS team.
     public function postImportSync() {
-        return mysql_query("CALL match_sync(0,0,$this->team_id,$this->team_id,0)");
+        return $conn->query("CALL match_sync(0,0,$this->team_id,$this->team_id,0)");
     }
     
     public function allowEdit() {
@@ -506,7 +506,7 @@ class Team
 
     public static function exists($id) 
     {
-        $result = mysql_query("SELECT COUNT(*) FROM teams WHERE team_id = $id");
+        $result = $conn->query("SELECT COUNT(*) FROM teams WHERE team_id = $id");
         list($CNT) = mysql_fetch_row($result);
         return ($CNT == 1);
     }
@@ -526,9 +526,9 @@ class Team
             $where[] = "f_lid IN (".implode(',',$f_lids).")";
         }
         $query = "SELECT team_id,name FROM teams".(!empty($where) ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY name ASC';
-        $result = mysql_query($query);
-        if (mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        $result = $conn->query($query);
+        if ($result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 if ($noObj) {
                     $teams[$row['team_id']] = $row['name'];
                 }
@@ -588,7 +588,7 @@ class Team
             self::T_CREATE_ERROR__UNEXPECTED_INPUT => $EXPECTED !== array_keys($input),
             self::T_CREATE_ERROR__INVALID_RACE     => !in_array((int) $input['f_race_id'], array_keys($raceididx)),
             self::T_CREATE_ERROR__INVALID_COACH    => !get_alt_col('coaches', 'coach_id', (int) $input['owned_by_coach_id'], 'coach_id'),
-            self::T_CREATE_ERROR__INVALID_NAME     => get_alt_col('teams', 'name', mysql_real_escape_string($input['name']), 'team_id') || empty($input['name']),
+            self::T_CREATE_ERROR__INVALID_NAME     => get_alt_col('teams', 'name', $conn->quote($input['name']), 'team_id') || empty($input['name']),
             self::T_CREATE_ERROR__INVALID_LEAGUE   => get_alt_col('coaches', 'coach_id', (int) $input['owned_by_coach_id'], 'ring') != Coach::T_RING_GLOBAL_ADMIN && 0 == (int) SQLFetchField("SELECT COUNT(*) FROM memberships WHERE lid = ".((int) $input['f_lid'])." AND cid = ".((int) $input['owned_by_coach_id'])." AND ring >= ".Coach::T_RING_LOCAL_REGULAR),
             self::T_CREATE_ERROR__INVALID_DIVISION => $input['f_did'] != self::T_NO_DIVISION_TIE && $input['f_lid'] != get_alt_col('divisions', 'did', (int) $input['f_did'], 'f_lid'),
         );
@@ -596,10 +596,10 @@ class Team
             if ($halt) return array($exitStatus, null);
         }
             
-        $input['name'] = "'".mysql_real_escape_string($input['name'])."'"; # Need to quote strings when using INSERT statement.
+        $input['name'] = "'".$conn->quote($input['name'])."'"; # Need to quote strings when using INSERT statement.
 
         $query = "INSERT INTO teams (".implode(',',$EXPECTED).") VALUES (".implode(',', $input).")";
-        if (mysql_query($query))
+        if ($conn->query($query))
             $tid = mysql_insert_id();
         else {
             self::$T_CREATE_SQL_ERROR['query'] = $query;

@@ -39,7 +39,7 @@ public static function main($argv) # argv = argument vector (array).
             case 'coach':
                 echo "<b>".$lng->getTrn('coaches', 'Gallery')."</b><br><hr><br>\n";
                 $q = "SELECT coach_id, name FROM coaches,memberships WHERE cid = coach_id AND lid = $sel_lid GROUP BY cid, lid ORDER BY name ASC";
-                $result = mysql_query($q);
+                $result = $conn->query($q);
                 while ($c = mysql_fetch_object($result)) {
                     $img = new ImageSubSys(IMGTYPE_COACH, $c->coach_id);
                     $pic = $img->getPath();

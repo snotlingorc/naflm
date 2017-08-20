@@ -40,9 +40,9 @@ public $about = '';
 
 function __construct($ft_id) 
 {
-    $result = mysql_query("SELECT * FROM famousteams WHERE ft_id = $ft_id");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT * FROM famousteams WHERE ft_id = $ft_id");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             foreach ($row as $key => $val) {
                 $this->$key = $val;
             }
@@ -52,9 +52,9 @@ function __construct($ft_id)
 
 public function edit($title, $about) 
 {
-    if (mysql_query("UPDATE famousteams SET 
-                    title = '".mysql_real_escape_string($title)."', 
-                    about = '".mysql_real_escape_string($about)."' 
+    if ($conn->query("UPDATE famousteams SET
+                    title = '".$conn->quote($title)."',
+                    about = '".$conn->quote($about)."'
                     WHERE ft_id = $this->ft_id")) {
         $this->title = $title;
         $this->about = $about;
@@ -66,7 +66,7 @@ public function edit($title, $about)
 
 public function delete()
 {
-    return (mysql_query("DELETE FROM famousteams WHERE ft_id = $this->ft_id"));
+    return ($conn->query("DELETE FROM famousteams WHERE ft_id = $this->ft_id"));
 }
 
 /***************
@@ -116,9 +116,9 @@ public static function getFT($node, $id, $N = false)
             return array();
     }
 
-    $result = mysql_query($query) or die(mysql_error());
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query($query) or die(mysql_error());
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $entry = new self($row['id']);
             // Add extra fields to object.
             unset($row['id']);
@@ -133,11 +133,11 @@ public static function getFT($node, $id, $N = false)
 
 public static function create($tid, $title, $about)
 {
-    return (mysql_query("
+    return ($conn->query("
             INSERT INTO famousteams 
             (tid, title, about, date) 
             VALUES 
-            ($tid, '".mysql_real_escape_string($title)."', '".mysql_real_escape_string($about)."', NOW())
+            ($tid, '".$conn->quote($title)."', '".$conn->quote($about)."', NOW())
             "));
 }
 
@@ -200,7 +200,7 @@ public static function triggerHandler($type, $argv){}
 public static function isInFT($tid) 
 {
     $query = "SELECT tid FROM famousteams WHERE tid = $tid";
-    return (($result = mysql_query($query)) && mysql_num_rows($result) > 0);
+    return (($result = $conn->query($query)) && $result->fetchColumn() > 0);
 }
 
 public static function makeList() {
@@ -284,14 +284,14 @@ public static function makeList() {
                 <b><?php echo $lng->getTrn('team', __CLASS__).'</b>';?><br>
                 <?php
                 $query = "SELECT team_id, name FROM teams WHERE f_lid = $node_id ORDER by name ASC";
-                $result = mysql_query($query);
-                if ($result && mysql_num_rows($result) == 0) {
+                $result = $conn->query($query);
+                if ($result && $result->fetchColumn() == 0) {
                     $_DISABLED = 'DISABLED';
                 }
                 ?>
                 <select name="tid" id="teams" <?php echo $_DISABLED;?>>
                     <?php
-                    while ($row = mysql_fetch_assoc($result)) {
+                    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                         echo "<option value='$row[team_id]' ".(($tid == $row['team_id']) ? 'SELECTED' : '').">$row[name]</option>\n";
                     }
                     ?>

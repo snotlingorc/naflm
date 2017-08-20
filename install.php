@@ -62,7 +62,7 @@ else
 {
    // Make sure OBBLM is not already installed
    $conn = mysql_up();
-   if(mysql_query("DESCRIBE coaches"))
+   if($conn->query("DESCRIBE coaches"))
    {
      echo <<<EOL
      It seems OBBLM is already installed.<br>You can safely delete the file <i>install.php</i> and go to the main page.

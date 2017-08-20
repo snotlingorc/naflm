@@ -94,8 +94,8 @@ public static function main($argv) {
                                 $s = ($d == 'cas') ? 'bh+ki+si' : $d;
                                 foreach (array(1,2) as $j) {
                                     $query = "SELECT SUM($s) as '$s' FROM matches, match_data WHERE f_match_id = match_id AND match_id = $m->match_id AND f_team_id = team${j}_id";
-                                    $result = mysql_query($query);
-                                    $row = mysql_fetch_assoc($result);
+                                    $result = $conn->query($query);
+                                    $row = $result->fetch(PDO::FETCH_ASSOC);
                                     $v[$j] = ($row[$s]) ? $row[$s] : 0;
                                 }
                                 echo "<b>$v[1] &nbsp;-&nbsp; $v[2]</b>";
@@ -232,8 +232,8 @@ private static function getMemMatches($node = false, $node_id = false) {
 
     foreach ($qryarr as $k => $query) {
         $mObjs = array();
-        if (($result = mysql_query($query)) && mysql_num_rows($result) > 0) {
-            while ($row = mysql_fetch_assoc($result)) {
+        if (($result = $conn->query($query)) && $result->fetchColumn() > 0) {
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 array_push($mObjs, new Match($row['match_id']));
             }
         }

@@ -38,8 +38,8 @@ public $location = ''; // Physical location of league.
  ***************/
 
 function __construct($lid) {
-    $result = mysql_query("SELECT * FROM leagues WHERE lid = $lid");
-    $row = mysql_fetch_assoc($result);
+    $result = $conn->query("SELECT * FROM leagues WHERE lid = $lid");
+    $row = $result->fetch(PDO::FETCH_ASSOC);
     foreach ($row as $col => $val) {
         $this->$col = ($val) ? $val : 0;
     }
@@ -55,33 +55,33 @@ public function delete()
     foreach ($this->getDivisions() as $d) {
         $status &= $d->delete();
     }
-    return ($status && mysql_query("DELETE FROM leagues WHERE lid = $this->lid"));
+    return ($status && $conn->query("DELETE FROM leagues WHERE lid = $this->lid"));
 }
 
 public function setName($name)
 {
-    $query = "UPDATE leagues SET name = '".mysql_real_escape_string($name)."' WHERE lid = $this->lid";
-    return (get_alt_col('leagues', 'name', $name, 'lid')) ? false : mysql_query($query);
+    $query = "UPDATE leagues SET name = '".$conn->quote($name)."' WHERE lid = $this->lid";
+    return (get_alt_col('leagues', 'name', $name, 'lid')) ? false : $conn->query($query);
 }
 
 public function setLocation($location)
 {
-    $query = "UPDATE leagues SET location = '".mysql_real_escape_string($location)."' WHERE lid = $this->lid";
-    return mysql_query($query);
+    $query = "UPDATE leagues SET location = '".$conn->quote($location)."' WHERE lid = $this->lid";
+    return $conn->query($query);
 }
 
 public function setTeamDivisionTies($bool)
 {
     $query = "UPDATE leagues SET tie_teams = ".($bool ? 'TRUE' : 'FALSE')." WHERE lid = $this->lid";
-    return mysql_query($query);
+    return $conn->query($query);
 }
 
 public function getDivisions($onlyIds = false)
 {
     $divisions = array();
-    $result = mysql_query("SELECT did FROM divisions WHERE f_lid = $this->lid");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT did FROM divisions WHERE f_lid = $this->lid");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($divisions, ($onlyIds) ? $row['did'] : new Division($row['did']));
         }
     }
@@ -91,9 +91,9 @@ public function getDivisions($onlyIds = false)
 public static function getLeagues($onlyIds = false)
 {
     $leagues = array();
-    $result = mysql_query("SELECT lid FROM leagues");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT lid FROM leagues");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($leagues, ($onlyIds) ? $row['lid'] : new League($row['lid']));
         }
     }
@@ -102,9 +102,9 @@ public static function getLeagues($onlyIds = false)
 
 public static function getLeaguesWithLocation() {
     $leagues = array();
-    $result = mysql_query("SELECT lid FROM leagues where location <> '' and location is not null");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT lid FROM leagues where location <> '' and location is not null");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             array_push($leagues, new League($row['lid']));
         }
     }
@@ -113,9 +113,9 @@ public static function getLeaguesWithLocation() {
 
 public static function getLeaguesByLocation() {
     $locations = array();
-    $result = mysql_query("SELECT lid FROM leagues");
-    if ($result && mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
+    $result = $conn->query("SELECT lid FROM leagues");
+    if ($result && $result->fetchColumn() > 0) {
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $league = new League($row['lid']);
             
             if($league->location) {
@@ -136,12 +136,12 @@ public static function create($name, $location, $tie_teams)
 {
     global $lng;
     
-    $query = "INSERT INTO leagues (date, location, name, tie_teams) VALUES (NOW(), '".mysql_real_escape_string($location)."', '".mysql_real_escape_string($name)."', ".((int) $tie_teams).")";
+    $query = "INSERT INTO leagues (date, location, name, tie_teams) VALUES (NOW(), '".$conn->quote($location)."', '".$conn->quote($name)."', ".((int) $tie_teams).")";
     if(get_alt_col('leagues', 'name', $name, 'lid'))
         return $lng->getTrn('admin/nodes/errors/league_already_exists');
     
     // Create the league
-    mysql_query($query);
+    $conn->query($query);
     
     // Make a new settings file for that league.
     $new_lid = get_alt_col('leagues', 'name', $name, 'lid');

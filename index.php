@@ -124,7 +124,8 @@ if(Mobile::isMobile()) {
 }
 
 HTMLOUT::frame_end(); // Spit out all the end-tags.
-mysql_close($conn);
+$result->closeCursor();
+$conn = null;
 MTS('END OF SCRIPT');
 
 
