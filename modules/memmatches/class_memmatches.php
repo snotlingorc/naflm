@@ -237,7 +237,7 @@ private static function getMemMatches($node = false, $node_id = false) {
                 array_push($mObjs, new Match($row['match_id']));
             }
         }
-        elseif (mysql_errno() != 0) {
+        elseif ($result->errorCode() != 0) {
             die("<b>Query:</b><br>\n$query<br>\n<br>\n<b>Error:</b><br>\n".$conn->errorInfo()."<br>\n");
         }
         objsort($mObjs, array('+date_played'));
