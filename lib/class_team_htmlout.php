@@ -67,7 +67,7 @@ public static function dispList()
     }
 
     $result = $conn->query($queryCnt);
-    list($cnt) = mysql_fetch_row($result);
+    list($cnt) = $conn->fetch(PDO::FETCH_NUM);;
     $pages = ($cnt == 0) ? 1 : ceil($cnt/T_HTML_TEAMS_PER_PAGE);
     global $page;
     $page = (isset($_GET['page']) && $_GET['page'] <= $pages) ? $_GET['page'] : 1; # Page 1 is default, of course.
@@ -82,7 +82,7 @@ public static function dispList()
 
     $teams = array();
     $result = $conn->query($queryGet);
-    while ($t = mysql_fetch_object($result)) {
+    while ($t = $conn->fetch(PDO::FETCH_OBJ);) {
         $img = new ImageSubSys(IMGTYPE_TEAMLOGO, $t->team_id);
         $t->logo = "<img border='0px' height='20' width='20' alt='Team race picture' src='".$img->getPath($t->f_race_id)."'>";
         $retired = $t->retired;

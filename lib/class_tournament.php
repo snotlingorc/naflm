@@ -241,7 +241,7 @@ class Tour
         if (!$conn->query($query)) {
             return false;
         }
-        $tour_id = mysql_insert_id();
+        $tour_id = $conn->lastInsertId();;
 
         /* Generate matches depending on type */
 

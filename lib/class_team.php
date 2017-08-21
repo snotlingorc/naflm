@@ -367,7 +367,7 @@ class Team
         $query = "SELECT (COUNT(*) >= ".$rules['max_team_players'].") FROM players
             WHERE owned_by_team_id = $this->team_id AND date_sold IS NULL AND status NOT IN (".DEAD.")";
         $result = $conn->query($query);
-        $row = mysql_fetch_row($result);
+        $row = $conn->fetch(PDO::FETCH_NUM);;
         return (bool) $row[0];
     }
 
@@ -380,7 +380,7 @@ class Team
         $query = "SELECT IFNULL(COUNT(*) < qty, TRUE) FROM players, game_data_players 
             WHERE f_pos_id = pos_id AND owned_by_team_id = $this->team_id AND f_pos_id = $pos_id AND date_died IS NULL AND date_sold IS NULL";
         $result = $conn->query($query);
-        $row = mysql_fetch_row($result);
+        $row = $conn->fetch(PDO::FETCH_NUM);;
         return ((bool) $row[0]) && $this->isPlayerPosValid($pos_id);
     }
 
@@ -431,7 +431,7 @@ class Team
         global $T_ALLOWED_PLAYER_NR;
         $query = "SELECT GROUP_CONCAT(nr) FROM players WHERE owned_by_team_id = $this->team_id GROUP BY owned_by_team_id";
         $result = $conn->query($query);
-        list($inUse) = mysql_fetch_row($result);
+        list($inUse) = $conn->fetch(PDO::FETCH_NUM);;
         $inUse = explode(',',$inUse);
         $free = array_diff($T_ALLOWED_PLAYER_NR, $inUse);
         return current($free);
@@ -507,7 +507,7 @@ class Team
     public static function exists($id) 
     {
         $result = $conn->query("SELECT COUNT(*) FROM teams WHERE team_id = $id");
-        list($CNT) = mysql_fetch_row($result);
+        list($CNT) = $conn->fetch(PDO::FETCH_NUM);;
         return ($CNT == 1);
     }
 
@@ -562,7 +562,7 @@ class Team
 
     public static $T_CREATE_SQL_ERROR = array(
         'query' => null, # mysql fail query.
-        'error' => null, # mysql_error()
+        'error' => null, # $conn->errorInfo()
     );
 
     // Required passed fields (input) to create().
@@ -600,10 +600,10 @@ class Team
 
         $query = "INSERT INTO teams (".implode(',',$EXPECTED).") VALUES (".implode(',', $input).")";
         if ($conn->query($query))
-            $tid = mysql_insert_id();
+            $tid = $conn->lastInsertId();;
         else {
             self::$T_CREATE_SQL_ERROR['query'] = $query;
-            self::$T_CREATE_SQL_ERROR['error'] = mysql_error();
+            self::$T_CREATE_SQL_ERROR['error'] = $conn->errorInfo();
             return array(self::T_CREATE_ERROR__SQL_QUERY_FAIL, null);
         }
         

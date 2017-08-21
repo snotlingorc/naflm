@@ -316,7 +316,7 @@ public static function step1() {
 			ORDER BY 
 				leagues.name,divisions.name,tours.name";
 
-	$result = $conn->query($query) or die(mysql_error());
+	$result = $conn->query($query) or die($conn->errorInfo());
     if ($result && $result->fetchColumn() > 0) {
 	
 		$current_lid = 0;
@@ -436,7 +436,7 @@ public static function showTeamPoolForLeague($id, $showScheduleLink = false, $st
 		?><div class="teamPool"><?php 
 			$query = "SELECT team_id from teams where f_lid = $id and f_did = 0";
 			
-			$result = $conn->query($query) or die(mysql_error());
+			$result = $conn->query($query) or die($conn->errorInfo());
 			if ($result && $result->fetchColumn() > 0) {
 				$seperator = 0;
 				while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
@@ -485,7 +485,7 @@ public static function showTeamPoolForDivision($id, $showScheduleLink = false, $
 		?><div class="teamPool"><?php 
 			$query = "SELECT team_id FROM teams WHERE f_did = " . $id . " ORDER by name";
 			
-			$result = $conn->query($query) or die(mysql_error());
+			$result = $conn->query($query) or die($conn->errorInfo());
 			if ($result && $result->fetchColumn() > 0) {
 				$seperator = 0;
 				while ($row = $result->fetch(PDO::FETCH_ASSOC)) {

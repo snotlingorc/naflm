@@ -622,7 +622,7 @@ function get_alt_col($V, $X, $Y, $Z) {
      */
 
     $result = $conn->query("SELECT $Z FROM $V WHERE $X = '" . $conn->quote($Y) . "'");
-    return ($result->fetchColumn() > 0 && ($r = mysql_fetch_row($result))) ? $r[0] : null;
+    return ($result->fetchColumn() > 0 && ($r = $conn->fetch(PDO::FETCH_NUM);)) ? $r[0] : null;
 }
 
 function get_alt_col_int($V, $X, $Y, $Z) {
@@ -637,7 +637,7 @@ function get_alt_col_int($V, $X, $Y, $Z) {
      */
 
     $result = $conn->query("SELECT $Z FROM $V WHERE $X = $Y");
-    return ($result->fetchColumn() > 0 && ($r = mysql_fetch_row($result))) ? $r[0] : null;
+    return ($result->fetchColumn() > 0 && ($r = $conn->fetch(PDO::FETCH_NUM);)) ? $r[0] : null;
 }
 
 function get_rows($tbl, array $getFields, $where = array()) {
@@ -651,7 +651,7 @@ function get_rows($tbl, array $getFields, $where = array()) {
     $query = 'SELECT '.(empty($getFields) ? '*' : implode(',', $getFields))." FROM $tbl ".(empty($where) ? '' : 'WHERE '.implode(' AND ', $where));
     $ret = array();
     if ($result = $conn->query($query)) {
-        while ($row = mysql_fetch_object($result)) {
+        while ($row = $conn->fetch(PDO::FETCH_OBJ);) {
             $ret[] = $row;
         }
     }
@@ -702,7 +702,7 @@ function set_list($table, $col, $val, $new_col, $new_val = array()) {
 
 function SQLFetchField($query) {
     $result = $conn->query($query);
-    list($field) = ($result) ? mysql_fetch_row($result) : array(null);
+    list($field) = ($result) ? $conn->fetch(PDO::FETCH_NUM); : array(null);
     return $field;
 }
 
@@ -813,7 +813,7 @@ function upgrade_database($version, $opts, $upgradeSQLs)
             continue;
         $status = true;
         foreach ($SQLs as $query) {
-            $status &= ($conn->query($query) or die(mysql_error()));
+            $status &= ($conn->query($query) or die($conn->errorInfo()));
         }
         echo ($status) ? "<font color='green'>OK &mdash; SQLs of $modname</font><br>\n" : "<font color='red'>FAILED &mdash; SQLs of $modname</font><br>\n";
     }
@@ -834,7 +834,7 @@ function upgrade_database($version, $opts, $upgradeSQLs)
 	if (isset($upgradeSQLs[$version])) {
 		$core_SQLs = $upgradeSQLs[$version];
 		$status = true;
-		foreach ($core_SQLs as $query) { $status &= ($conn->query($query) or die(mysql_error()."\n<br>SQL:\n<br>---\n<br>".$query));}
+		foreach ($core_SQLs as $query) { $status &= ($conn->query($query) or die($conn->errorInfo()."\n<br>SQL:\n<br>---\n<br>".$query));}
 		$cnt = "(".count($core_SQLs)." total)";
 	    echo ($status) ? "<font color='green'>OK &mdash; Core SQLs</font> $cnt<br>\n" : "<font color='red'>FAILED &mdash; Core SQLs</font> $cnt<br>\n";
     }
@@ -918,7 +918,7 @@ class SQLUpgrade
         if (!$result || $result->fetchColumn() == 0) {
             return self::NONE;
         }
-        $row = mysql_fetch_row($result);
+        $row = $conn->fetch(PDO::FETCH_NUM);;
         return ((int) $row[0]) ? $query : self::NONE;
     }
     
@@ -930,7 +930,7 @@ class SQLUpgrade
         if (!$result || $result->fetchColumn() == 0)
             return false;
 
-        $row = mysql_fetch_row($result);
+        $row = $conn->fetch(PDO::FETCH_NUM);;
         return (int) $row[0];
     }
     

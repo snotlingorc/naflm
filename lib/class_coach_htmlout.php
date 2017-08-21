@@ -70,7 +70,7 @@ public static function dispList()
     }    
     
     $result = $conn->query($queryCnt);
-    list($cnt) = mysql_fetch_row($result);
+    list($cnt) = $conn->fetch(PDO::FETCH_NUM);;
     $pages = ($cnt == 0) ? 1 : ceil($cnt/T_HTML_COACHES_PER_PAGE);
     global $page;
     $page = (isset($_GET['page']) && $_GET['page'] <= $pages) ? $_GET['page'] : 1; # Page 1 is default, of course.
@@ -85,7 +85,7 @@ public static function dispList()
     
     $coaches = array();
     $result = $conn->query($queryGet);
-    while ($c = mysql_fetch_object($result)) {
+    while ($c = $conn->fetch(PDO::FETCH_OBJ);) {
         $c->retired = ($c->retired) ? '<b>'.$lng->getTrn('common/yes').'</b>' : $lng->getTrn('common/no');
         $coaches[] = $c;
     }

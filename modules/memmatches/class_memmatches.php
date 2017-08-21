@@ -238,7 +238,7 @@ private static function getMemMatches($node = false, $node_id = false) {
             }
         }
         elseif (mysql_errno() != 0) {
-            die("<b>Query:</b><br>\n$query<br>\n<br>\n<b>Error:</b><br>\n".mysql_error()."<br>\n");
+            die("<b>Query:</b><br>\n$query<br>\n<br>\n<b>Error:</b><br>\n".$conn->errorInfo()."<br>\n");
         }
         objsort($mObjs, array('+date_played'));
         $m[$k] = (count($mObjs) > MAX_MEM_MATCHES) ? array() : $mObjs;

@@ -94,7 +94,7 @@ public static function logViewPage()
     $query = "SELECT * FROM log WHERE date > SUBDATE(NOW(), INTERVAL ".LOG_HIST_LENGTH." MONTH) ORDER BY date DESC";
     $result = $conn->query($query);
     $logs = array();
-    while ($l = mysql_fetch_object($result)) {
+    while ($l = $conn->fetch(PDO::FETCH_OBJ);) {
         echo "<tr><td>".textdate($l->date)."</td><td>$l->msg</td></tr>\n";
     }
     echo "</table>\n";

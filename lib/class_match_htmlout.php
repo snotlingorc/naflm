@@ -83,7 +83,7 @@ public static function tourMatches()
 
     $query = "SELECT COUNT(*) FROM matches WHERE f_tour_id = $trid";
     $result = $conn->query($query);
-    list($cnt) = mysql_fetch_row($result);
+    list($cnt) = $conn->fetch(PDO::FETCH_NUM);;
     $pages = ($cnt == 0) ? 1 : ceil($cnt/self::T_HTML_MATCHES_PER_PAGE);
     global $page;
     $page = isset($_GET['page']) ? $_GET['page'] : 1; # Page 1 is default, of course.
@@ -104,7 +104,7 @@ public static function tourMatches()
         ORDER BY round $ROUND_SORT_DIR, date_played DESC, date_created ASC LIMIT ".(($page-1)*self::T_HTML_MATCHES_PER_PAGE).', '.(($page)*self::T_HTML_MATCHES_PER_PAGE);
     $result = $conn->query($query);
     echo "<table class='tours'>\n";
-    while ($m = mysql_fetch_object($result)) {
+    while ($m = $conn->fetch(PDO::FETCH_OBJ);) {
         if ($m->round != $rnd) {
             $rnd = $m->round;
             $round = '';

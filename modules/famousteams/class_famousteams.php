@@ -116,7 +116,7 @@ public static function getFT($node, $id, $N = false)
             return array();
     }
 
-    $result = $conn->query($query) or die(mysql_error());
+    $result = $conn->query($query) or die($conn->errorInfo());
     if ($result && $result->fetchColumn() > 0) {
         while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
             $entry = new self($row['id']);

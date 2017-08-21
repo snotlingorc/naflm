@@ -185,7 +185,7 @@ class Player
         global $skillcats;
         foreach ($skillcats as $t => $grp) {
             $result = $conn->query("SELECT GROUP_CONCAT(f_skill_id) FROM players_skills WHERE f_pid = $this->player_id AND type = '$t'");
-            $row = mysql_fetch_row($result);
+            $row = $conn->fetch(PDO::FETCH_NUM);;
             $this->{$grp['obj_idx']} = empty($row[0]) ? array() : explode(',', $row[0]);
         }
     }
@@ -724,7 +724,7 @@ class Player
     public static function exists($id) 
     {
         $result = $conn->query("SELECT COUNT(*) FROM players WHERE player_id = $id");
-        list($CNT) = mysql_fetch_row($result);
+        list($CNT) = $conn->fetch(PDO::FETCH_NUM);;
         return ($CNT == 1);
     }
 
@@ -759,7 +759,7 @@ class Player
          **/
         
         $result = $conn->query("SELECT cost FROM game_data_players WHERE pos_id = $pos_id");
-        $row = mysql_fetch_row($result);
+        $row = $conn->fetch(PDO::FETCH_NUM);;
         return (int) $row[0];
     }
     
@@ -793,7 +793,7 @@ class Player
     
     public static $T_CREATE_SQL_ERROR = array(
         'query' => null, # mysql fail query.
-        'error' => null, # mysql_error()
+        'error' => null, # $conn->errorInfo()
     );
     
     // Required passed fields (input) to create().
@@ -862,12 +862,12 @@ class Player
 
         $query = "INSERT INTO players (".implode(',',array_keys($input)).") VALUES (".implode(',', array_values($input)).")";
         if ($conn->query($query)) {
-            $pid = mysql_insert_id();
+            $pid = $conn->lastInsertId();;
             $team->dtreasury(-1 * $price);
         }
         else {
             self::$T_CREATE_SQL_ERROR['query'] = $query;
-            self::$T_CREATE_SQL_ERROR['error'] = mysql_error();
+            self::$T_CREATE_SQL_ERROR['error'] = $conn->errorInfo();
             return array(self::T_CREATE_ERROR__SQL_QUERY_FAIL, null);
         }
 

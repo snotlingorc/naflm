@@ -200,7 +200,7 @@ class Coach
     public function getLeagues() {
         $result = $conn->query("select name from memberships join leagues on memberships.lid=leagues.lid where cid = $this->coach_id");
         $leagues = array();
-        while($league = mysql_fetch_object($result)) {
+        while($league = $conn->fetch(PDO::FETCH_OBJ);) {
             array_push($leagues, $league->name);
         }
         
@@ -309,7 +309,7 @@ class Coach
         $my_admin_menu = array();
 
         $result = $conn->query("SELECT COUNT(*) FROM memberships WHERE cid = $this->coach_id AND ring = ".self::T_RING_LOCAL_ADMIN);
-        list($cnt) = mysql_fetch_row($result);
+        list($cnt) = $conn->fetch(PDO::FETCH_NUM);;
         $my_admin_menu = array_merge(
             $this->ring == Coach::T_RING_GLOBAL_ADMIN ? $ring_com_access+$ring_sys_access : array(),
             $cnt > 0 ? $ring_com_access : array()
@@ -409,7 +409,7 @@ class Coach
     {
         $query = "SELECT activation_code = '$AC' FROM coaches WHERE coach_id = $this->coach_id";
         $result = $conn->query($query);
-        list($OK) = mysql_fetch_row($result);
+        list($OK) = $conn->fetch(PDO::FETCH_NUM);;
         if ($OK) {
             $this->setRetired(false);
             $this->setActivationCode(false);
@@ -427,7 +427,7 @@ class Coach
     public static function exists($id) 
     {
         $result = $conn->query("SELECT COUNT(*) FROM coaches WHERE coach_id = $id");
-        list($CNT) = mysql_fetch_row($result);
+        list($CNT) = $conn->fetch(PDO::FETCH_NUM);;
         return ($CNT == 1);
     }
 
@@ -465,7 +465,7 @@ class Coach
         {
             case self::NODE_STRUCT__TREE:
                 $struct = array();
-                while ($r = mysql_fetch_object($result)) {
+                while ($r = $conn->fetch(PDO::FETCH_OBJ);) {
                     if (!empty($r->trid)) $struct[$r->lid][$r->did][$r->trid]['desc'] = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_TOURNAMENT]),null));
                     if (!empty($r->did))  $struct[$r->lid][$r->did]['desc']           = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_DIVISION]),null));
                                           $struct[$r->lid]['desc']                    = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_LEAGUE]),null));
@@ -475,7 +475,7 @@ class Coach
                 
             case self::NODE_STRUCT__FLAT:
                 $leagues = $divisions = $tours = array();
-                while ($r = mysql_fetch_object($result)) {
+                while ($r = $conn->fetch(PDO::FETCH_OBJ);) {
                     if (!empty($r->trid)) $tours[$r->trid]    = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_TOURNAMENT]),null));
                     if (!empty($r->did))  $divisions[$r->did] = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_DIVISION]),null));
                                           $leagues[$r->lid]   = array_intersect_key((array) $r, array_fill_keys(array_values($extraFields[T_NODE_LEAGUE]),null));
@@ -606,7 +606,7 @@ class Coach
                             " . $input['ring'].",
                             '".array_strpack_assoc('%k=%v', $input['settings'], ',')."')";
 
-        if (($status = $conn->query($query)) && is_numeric($cid = mysql_insert_id())) {
+        if (($status = $conn->query($query)) && is_numeric($cid = $conn->lastInsertId();)) {
             // Set default memberships
             $newCoach = new Coach($cid);
             foreach (array_merge($settings['default_leagues'], $input['def_leagues']) as $lid) {

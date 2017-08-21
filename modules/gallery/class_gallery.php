@@ -40,7 +40,7 @@ public static function main($argv) # argv = argument vector (array).
                 echo "<b>".$lng->getTrn('coaches', 'Gallery')."</b><br><hr><br>\n";
                 $q = "SELECT coach_id, name FROM coaches,memberships WHERE cid = coach_id AND lid = $sel_lid GROUP BY cid, lid ORDER BY name ASC";
                 $result = $conn->query($q);
-                while ($c = mysql_fetch_object($result)) {
+                while ($c = $conn->fetch(PDO::FETCH_OBJ);) {
                     $img = new ImageSubSys(IMGTYPE_COACH, $c->coach_id);
                     $pic = $img->getPath();
                     echo "<div style='float:left; padding:10px;'>$c->name<br><a href='$pic'><img HEIGHT=150 src='$pic' alt='pic'></a></div>";

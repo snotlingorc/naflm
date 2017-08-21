@@ -185,7 +185,7 @@ WHERE match_id = $this->match_id";
 
         if ( !$conn->query( $query ) )
         {
-            $this->error = "Failed to report the TCAS.  Error: ".mysql_error();
+            $this->error = "Failed to report the TCAS.  Error: ".$conn->errorInfo();
             return false;
         }
 
@@ -198,7 +198,7 @@ WHERE match_id = $this->match_id";
 
         if ( !$conn->query( $query ) )
         {
-            $this->error = "Failed to upload the replay file with the following error: ".mysql_error();
+            $this->error = "Failed to upload the replay file with the following error: ".$conn->errorInfo();
             return false;
         }
         //End add replay

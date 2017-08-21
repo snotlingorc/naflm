@@ -489,7 +489,7 @@ class Match
             $status &= $conn->query("DELETE FROM match_data WHERE f_player_id = $pid AND f_match_id = $mid");
         }
         $query = 'INSERT INTO match_data ('.implode(',', $EXPECTED).') VALUES ('.implode(',', array_values($input)).')';
-        $result = $conn->query($query) or status(false, 'Failed to save player entry with PID = '.$pid.'<br><br>'.mysql_error().'<br><br>'.$query);
+        $result = $conn->query($query) or status(false, 'Failed to save player entry with PID = '.$pid.'<br><br>'.$conn->errorInfo().'<br><br>'.$query);
         return $result && 
             // Extra stats, if sent.
             (!empty($ES) ? self::ESentry(array(
@@ -632,7 +632,7 @@ class Match
     
     public static $T_CREATE_SQL_ERROR = array(
         'query' => null, # mysql fail query.
-        'error' => null, # mysql_error()
+        'error' => null, # $conn->errorInfo()
     );
     
     public static function create(array $input) {
@@ -669,10 +669,10 @@ class Match
         $query = "INSERT INTO matches (team1_id, team2_id, round, f_tour_id, date_created)
                     VALUES ($input[team1_id], $input[team2_id], $input[round], '$input[f_tour_id]', NOW())";
         if ($conn->query($query))
-            $mid = mysql_insert_id();
+            $mid = $conn->lastInsertId();;
         else {
             self::$T_CREATE_SQL_ERROR['query'] = $query;
-            self::$T_CREATE_SQL_ERROR['error'] = mysql_error();
+            self::$T_CREATE_SQL_ERROR['error'] = $conn->errorInfo();
             return array(self::T_CREATE_ERROR__SQL_QUERY_FAIL, null);
         }
 

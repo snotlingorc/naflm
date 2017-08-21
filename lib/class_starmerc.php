@@ -74,7 +74,7 @@ class Star
     {
         $query = "SELECT skills FROM game_data_stars WHERE star_id = $this->star_id";
         $result = $conn->query($query);
-        list($skillsstr) = mysql_fetch_row($result);
+        list($skillsstr) = $conn->fetch(PDO::FETCH_NUM);;
         $this->skills = ($makeString) ? skillsTrans($skillsstr) : (empty($skillsstr) ? array() : explode(',', $skillsstr));
     }
     

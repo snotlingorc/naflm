@@ -165,7 +165,7 @@ private static function entries($tid)
     $result = $conn->query($query);
     $entries = array();
     if ($result->fetchColumn() > 0) {
-        while ($obj = mysql_fetch_object($result)) {
+        while ($obj = $conn->fetch(PDO::FETCH_OBJ);) {
             $entries[] = $obj;
         }    
     }
